@@ -176,8 +176,9 @@ function filterTime() {
   const selectedDate = document.getElementById('inp-date').value;
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
+  const thHour = (now.getUTCHours() + 7) % 24;
   const minHour = (selectedDate === today || !selectedDate)
-    ? now.getHours() + 2
+    ? thHour + 2
     : 0;
   const timeSel = document.getElementById('inp-time');
   timeSel.innerHTML = '<option value="">-- เลือก --</option>';
