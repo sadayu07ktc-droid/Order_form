@@ -211,8 +211,11 @@ function _setup(u, g) {
     sel.innerHTML=`<option value="${u.gardenId}" selected>${u.gardenName}</option>`;
     sel.classList.add('ro'); U.gardenId=u.gardenId; U.gardenName=u.gardenName;
     _fillBills(u.billNames||[]);
+    if (u.rspo === 'มี') {
+      document.querySelectorAll('#inner-detail .chip')[1].click(); // ติ๊ก "มี RSPO"
+    }
     // Pickup: เพิ่ม dropdown จาก DATA (สามารถดึงจาก gardenData ได้)
-  } else if(u.role==='Ramp'){
+    } else if(u.role==='Ramp'){
     document.getElementById('uname').textContent=u.name;
     document.getElementById('usub').textContent=u.phone;
     document.getElementById('h-ramp').classList.remove('hide');
