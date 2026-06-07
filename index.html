@@ -211,8 +211,10 @@ function _setup(u, g) {
     sel.innerHTML=`<option value="${u.gardenId}" selected>${u.gardenName}</option>`;
     sel.classList.add('ro'); U.gardenId=u.gardenId; U.gardenName=u.gardenName;
     _fillBills(u.billNames||[]);
+    // Pre-select RSPO ตามค่าในชีต
     if (u.rspo === 'มี') {
-      document.querySelectorAll('#inner-detail .chip')[1].click(); // ติ๊ก "มี RSPO"
+      const rspoChips = document.querySelectorAll('#inner-detail .chips:first-of-type .chip');
+      if (rspoChips[1]) { pick(rspoChips[1]); }
     }
     // Pickup: เพิ่ม dropdown จาก DATA (สามารถดึงจาก gardenData ได้)
     } else if(u.role==='Ramp'){
