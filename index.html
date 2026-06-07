@@ -271,6 +271,8 @@ function _setup(u, g) {
     }
 
   } else if (u.role === 'Ramp') {
+    U.gardenId   = u.rampId;    // ← เพิ่ม
+    U.gardenName = u.name;      // ← เพิ่ม
     // ── ลานเท ───────────────────────────────────────────
     document.getElementById('uname').textContent = u.name;
     document.getElementById('usub').textContent  = u.phone;
