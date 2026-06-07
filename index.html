@@ -289,25 +289,32 @@ function _fillPickups(pickups){
   });
   if(pickups.length > 0) sel.selectedIndex = 1; 
 }
-
 function _handleRspoAutoToggle(rspoValue) {
   const rspoChips = document.querySelectorAll('#inner-detail .chips:first-of-type .chip');
   const rspoContainer = document.getElementById('rspo-container');
+  
   if (rspoChips.length > 0) {
     rspoChips.forEach(chip => {
       const chipText = chip.textContent.trim();
-      if ((rspoValue === 'มี' && chipText.includes('มี')) || (rspoValue === 'ไม่มี' && chipText === 'ไม่มี')) {
+      
+      // 🔒 แก้ไข Logic ตรงนี้ให้เช็กคำแบบแม่นยำ ไม่ใช้ .includes ตัวหนังสือซ้ำซ้อน
+      if (rspoValue === 'มี' && chipText === 'มี RSPO') {
+        chip.classList.add('on');
+      } else if (rspoValue === 'ไม่มี' && chipText === 'ไม่มี') {
         chip.classList.add('on');
       } else {
-        chip.classList.remove('on');
+        chip.classList.remove('on'); // ตัวที่ไม่ใช่ให้เอาสีเขียวออก
       }
     });
   }
+  
+  // ล็อกไม่ให้กดสลับค่าเล่นเพื่อรักษาความถูกต้องของฐานข้อมูล
   if (rspoContainer) {
     rspoContainer.style.pointerEvents = 'none'; 
-    rspoContainer.style.opacity = '0.85';       
+    rspoContainer.style.opacity = '1'; // เปลี่ยนเป็น 1 เพื่อให้ข้อความชัดเจน ไม่เบลอจางจนมองยาก
   }
 }
+
 function _fillTeams(ts){
   const sel=document.getElementById('inp-team');
   ts.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.name;sel.appendChild(o);});
