@@ -191,7 +191,7 @@ const roleIcon  = {Owner:'🌳',Team:'🌿',Ramp:'🏭',Admin:'⚙️'};
 const roleCardCls= {Owner:'uc-g',Team:'uc-g',Ramp:'uc-b',Admin:'uc-g'};
 const roleAvCls  = {Owner:'av-g',Team:'av-g',Ramp:'av-b',Admin:'av-i'};
 const roleBgCls  = {Owner:'bg-g',Team:'bg-g',Ramp:'bg-b',Admin:'bg-i'};
-
+  
 function _setup(u, g) {
   U={...U,...u}; userRole=u.role;
   document.getElementById('ucard').className   = 'user-card '+(roleCardCls[u.role]||'uc-g');
@@ -208,14 +208,21 @@ function _setup(u, g) {
     sel.classList.add('ro'); U.gardenId=u.gardenId; U.gardenName=u.gardenName;
     _fillBills(u.billNames||[]);
     
-    // ตั้งค่าจุดรับของสวนประเภท Owner เข้า Dropdown
-    if (u.pickupPoint) {
-      _fillPickups([u.pickupPoint]);
+    // 🔥 ดึงข้อมูลจุดรับหรือพิกัดของสวนตัวเองมาแสดงอัตโนมัติ (แก้ไขตรงนี้)
+    const myGarden = g.gardens.find(x => x.id === u.gardenId);
+    if (myGarden) {
+      const pk = myGarden.pickupPoint;
+      const loc = myGarden.location;
+      if (!pk || pk === 'ไม่มี') {
+        _fillPickups([loc || 'พิกัดสวนหลัก']);
+      } else {
+        _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
+      }
     }
 
-    // Pre-select RSPO ตามค่าเริ่มต้นในฐานข้อมูลของ Owner คนนั้นๆ
+    // 🔥 เปิดชิป RSPO อัตโนมัติสำหรับ Owner
     _handleRspoAutoToggle(u.rspo || 'ไม่มี');
-    
+
   } else if(u.role==='Ramp'){
     document.getElementById('uname').textContent=u.name;
     document.getElementById('usub').textContent=u.phone;
@@ -240,56 +247,30 @@ function _fillGardens(gs){
     o.value=g.id;
     o.textContent=g.name;
     o.dataset.bills=JSON.stringify(g.billNames||[]);
-    o.dataset.pickup=g.pickupPoint||''; // ฝากข้อมูลจุดรับไว้ที่ Dropdown
-    o.dataset.rspo=g.rspo||'ไม่มี';       // ฝากข้อมูลมาตรฐาน RSPO ไว้ที่ Dropdown
+    o.dataset.pickup=g.pickupPoint||''; 
+    o.dataset.location=g.location||'';   
+    o.dataset.rspo=g.rspo||'ไม่มี';
     sel.appendChild(o);
   });
 }
 
-// ── 🛠️ ฟังก์ชันที่แก้ไขเพิ่ม: สลับชิป RSPO อัตโนมัติเมื่อสวนเปลี่ยน ──
 function onGardenChange(){
   const o=document.getElementById('inp-garden');
   const opt=o.options[o.selectedIndex];
-  if(!opt.value) {
-    _fillBills([]);
-    _fillPickups([]);
-    _handleRspoAutoToggle('ไม่มี');
-    return;
-  }
+  if(!opt || !opt.value) { _fillBills([]); _fillPickups([]); _handleRspoAutoToggle('ไม่มี'); return; }
   U.gardenId=opt.value; U.gardenName=opt.textContent;
   _fillBills(JSON.parse(opt.dataset.bills||'[]'));
   
-  // จัดการดึงข้อมูลจุดรับเข้า Dropdown
-  const pk = opt.dataset.pickup ? [opt.dataset.pickup] : [];
-  _fillPickups(pk);
-
-  // ดึงค่า RSPO มาเรียกคำสั่งเปิด-ปิดชิปบนหน้าจอโดยอัตโนมัติ
-  const currentRspoValue = opt.dataset.rspo || 'ไม่มี';
-  _handleRspoAutoToggle(currentRspoValue);
-}
-
-// ฟังก์ชันควบคุมการเปลี่ยนคลาสชิปและการควบคุมการกด (UX ป้องกันข้อผิดพลาด)
-function _handleRspoAutoToggle(rspoValue) {
-  const rspoChips = document.querySelectorAll('#inner-detail .chips:first-of-type .chip');
-  const rspoContainer = document.getElementById('rspo-container');
+  // 🔥 ดึงจุดรับ หรือสลับเป็นพิกัดสวนอัตโนมัติเมื่อ Admin เปลี่ยนสวน
+  const pk = opt.dataset.pickup;
+  const loc = opt.dataset.location;
+  if (!pk || pk === 'ไม่มี') {
+    _fillPickups([loc || 'พิกัดสวนหลัก']);
+  } else {
+    _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
+  }
   
-  if (rspoChips.length > 0) {
-    rspoChips.forEach(chip => {
-      const chipText = chip.textContent.trim();
-      // แปลงคำให้เช็กได้แม่นยำขึ้น ทั้งคำว่า "มี" และ "มี RSPO"
-      if ((rspoValue === 'มี' && chipText.includes('มี RSPO')) || (rspoValue === 'ไม่มี' && chipText === 'ไม่มี')) {
-        chip.classList.add('on');
-      } else {
-        chip.classList.remove('on');
-      }
-    });
-  }
-
-  // ล็อกไม่ให้ผู้ใช้กดเล่นซ้ำซ้อน เพราะระบบดึงข้อมูลที่แท้จริงจากหลังบ้านมาให้แล้ว
-  if (rspoContainer) {
-    rspoContainer.style.pointerEvents = 'none'; 
-    rspoContainer.style.opacity = '0.85';       
-  }
+  _handleRspoAutoToggle(opt.dataset.rspo || 'ไม่มี');
 }
 
 function _fillBills(bills){
@@ -301,10 +282,32 @@ function _fillBills(bills){
 function _fillPickups(pickups){
   const sel=document.getElementById('inp-pickup');
   sel.innerHTML='<option value="">-- เลือกจุดรับ --</option>';
-  pickups.forEach(p=>{const o=document.createElement('option');o.value=o.textContent=p;sel.appendChild(o);});
-  if(pickups.length > 0) sel.selectedIndex = 1; // เลือกให้ทันทีถ้ามีรายการเดียว
+  pickups.forEach(p=>{
+    const o=document.createElement('option');
+    o.value=o.textContent=p;
+    sel.appendChild(o);
+  });
+  if(pickups.length > 0) sel.selectedIndex = 1; 
 }
 
+function _handleRspoAutoToggle(rspoValue) {
+  const rspoChips = document.querySelectorAll('#inner-detail .chips:first-of-type .chip');
+  const rspoContainer = document.getElementById('rspo-container');
+  if (rspoChips.length > 0) {
+    rspoChips.forEach(chip => {
+      const chipText = chip.textContent.trim();
+      if ((rspoValue === 'มี' && chipText.includes('มี')) || (rspoValue === 'ไม่มี' && chipText === 'ไม่มี')) {
+        chip.classList.add('on');
+      } else {
+        chip.classList.remove('on');
+      }
+    });
+  }
+  if (rspoContainer) {
+    rspoContainer.style.pointerEvents = 'none'; 
+    rspoContainer.style.opacity = '0.85';       
+  }
+}
 function _fillTeams(ts){
   const sel=document.getElementById('inp-team');
   ts.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.name;sel.appendChild(o);});
@@ -322,12 +325,10 @@ async function submitForm(){
   const teamEl=document.getElementById('inp-team');
   if(!date){alert('กรุณาเลือกวันที่ครับ');return;}
   if(!time){alert('กรุณาเลือกเวลาครับ');return;}
-  if(!bill){alert('กรุณาเลือกชื่อในบิลครับ');return;}
-  if(!pickup){alert('กรุณาเลือกจุดรับครับ');return;}
 
   const rspoText=document.querySelector('#inner-detail .chips:first-of-type .chip.on')?.textContent||'ไม่มี';
-  // แปลงค่าข้อความปุ่ม "มี RSPO" ให้กลายเป็นสถานะคำว่า "มี" ส่งกลับไปหาหลังบ้านให้เข้าล็อกเดิม
-  const rspo = rspoText.includes('มี RSPO') ? 'มี' : 'ไม่มี';
+  // แปลงค่าส่งกลับไปหาหลังบ้านให้บันทึกคำว่า 'มี' หรือ 'ไม่มี' ตามโครงสร้างชีตหลัก
+  const rspo = rspoText.includes('มี') && !rspoText.includes('ไม่มี') ? 'มี' : 'ไม่มี';
 
   const binChip=document.querySelector('.card:nth-of-type(4) .chip.on')?.textContent;
   const binCount=(!binEl.classList.contains('hide'))?parseInt(binEl.value)||3:parseInt(binChip)||1;
