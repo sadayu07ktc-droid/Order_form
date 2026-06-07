@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>บันทึกรายงานขนส่ง — SSB</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --purple:#7C3AED;--purple-d:#5B21B6;--purple-l:#EDE9FE;
+  --pink:#EC4899;--pink-l:#FDF2F8;
+  --green:#16A34A;--green-l:#DCFCE7;
+  --gray:#F8F7FC;--gray2:#F1F0F8;
+  --text:#1E1B4B;--text-m:#6B6A85;--text-l:#A8A6B8;
+  --border:rgba(124,58,237,.12);
+  --red:#DC2626;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Sarabun',sans-serif;background:var(--gray);color:var(--text);min-height:100vh;padding-bottom:40px}
+
+/* Header gradient */
+.hdr{background:linear-gradient(135deg,var(--purple-d) 0%,var(--purple) 55%,var(--pink) 100%);padding:20px 18px 28px;text-align:center;color:#fff;position:relative;overflow:hidden}
+.hdr::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hdr::after{content:'';position:absolute;bottom:-30px;left:10px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hdr-icon{font-size:48px;margin-bottom:8px}
+.hdr h1{font-size:20px;font-weight:700;margin-bottom:4px}
+.hdr p{font-size:12px;opacity:.8}
+
+/* LINE status */
+.line-status{background:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin:-16px 16px 0;box-shadow:0 4px 20px rgba(0,0,0,.08);position:relative;z-index:1;margin-bottom:0}
+.ls-dot{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0}
+.ls-text h3{font-size:13px;font-weight:600;color:var(--text)}
+.ls-text p{font-size:11px;color:var(--text-m);margin-top:2px}
+
+/* Body */
+.body{padding:16px}
+
+/* Order info banner */
+.order-banner{background:linear-gradient(135deg,#EDE9FE,#FDF2F8);border:1px solid rgba(124,58,237,.15);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.ob-id{font-size:11px;color:var(--purple);font-weight:600;margin-bottom:6px}
+.ob-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.ob-item span:first-child{font-size:11px;color:var(--text-m)}
+.ob-item span:last-child{font-size:13px;font-weight:500;color:var(--text);display:block}
+.ob-full{grid-column:1/-1}
+.ob-status{display:inline-flex;align-items:center;gap:5px;background:rgba(124,58,237,.1);color:var(--purple);font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;margin-top:6px}
+
+/* Cards */
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.card-title{font-size:13px;font-weight:600;color:var(--purple);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.card-title .icon{font-size:18px}
+
+/* Weight grid */
+.wt-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end}
+.wt-lbl{font-size:11px;color:var(--text-m);margin-bottom:5px;font-weight:500}
+.wt-inp{width:100%;font-size:14px;font-family:'Sarabun',sans-serif;background:var(--gray2);border:1.5px solid transparent;border-radius:10px;padding:10px 8px;text-align:center;color:var(--text);outline:none;transition:all .15s}
+.wt-inp:focus{border-color:var(--purple);background:#fff}
+.wt-result{background:linear-gradient(135deg,var(--purple-l),#FDF2F8);border-radius:10px;padding:10px 8px;text-align:center}
+.wt-result .lbl{font-size:10px;color:var(--purple);font-weight:600;margin-bottom:3px}
+.wt-result .val{font-size:18px;font-weight:700;color:var(--purple)}
+.wt-unit{font-size:11px;color:var(--text-m);font-weight:400}
+.wt-section-lbl{font-size:11px;font-weight:600;color:var(--text-m);margin-bottom:8px;padding-bottom:4px;border-bottom:1px dashed rgba(124,58,237,.15)}
+
+/* Photo upload */
+.photo-area{border:2px dashed rgba(124,58,237,.3);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray2);position:relative;overflow:hidden}
+.photo-area:active{background:var(--purple-l)}
+.photo-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.photo-icon{font-size:36px;margin-bottom:8px}
+.photo-area h4{font-size:13px;font-weight:600;color:var(--purple)}
+.photo-area p{font-size:11px;color:var(--text-m);margin-top:4px}
+#photo-preview{display:none;margin-top:12px}
+#photo-preview img{width:100%;border-radius:10px;max-height:200px;object-fit:cover}
+#photo-preview .rem-btn{background:rgba(220,38,38,.1);color:var(--red);border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-family:'Sarabun',sans-serif;cursor:pointer;margin-top:8px;width:100%}
+
+/* Action buttons */
+.btn-primary{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff;font-size:16px;font-weight:700;font-family:'Sarabun',sans-serif;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 15px rgba(124,58,237,.35)}
+.btn-primary:active{opacity:.85}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{width:100%;padding:12px;border-radius:12px;background:#fff;color:var(--purple);font-size:14px;font-weight:600;font-family:'Sarabun',sans-serif;border:1.5px solid var(--purple);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+
+/* Status buttons */
+.status-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sbtn{padding:14px;border-radius:12px;border:none;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s}
+.sbtn-start{background:var(--green-l);color:var(--green)}
+.sbtn-start:active{background:#BBF7D0}
+.sbtn-arrive{background:var(--purple-l);color:var(--purple)}
+.sbtn-arrive:active{background:#DDD6FE}
+.sbtn-cancel{background:#FEE2E2;color:var(--red)}
+.sbtn .sbtn-icon{font-size:24px}
+.sbtn .sbtn-lbl{font-size:12px}
+
+/* Overlay + success */
+#overlay{display:none;position:fixed;inset:0;background:rgba(30,27,75,.6);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+#overlay.show{display:flex}
+.spinner{width:40px;height:40px;border-radius:50%;border:4px solid rgba(255,255,255,.2);border-top-color:#fff;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#overlay p{font-size:14px;color:#fff}
+#success{display:none;position:fixed;inset:0;background:linear-gradient(135deg,var(--purple-d),var(--purple),var(--pink));z-index:200;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;gap:14px;color:#fff}
+#success.show{display:flex}
+#success .si{font-size:72px}
+#success h2{font-size:24px;font-weight:700}
+#success p{font-size:14px;opacity:.9;line-height:1.8}
+.btn-close{margin-top:8px;padding:12px 36px;border-radius:999px;background:rgba(255,255,255,.2);color:#fff;font-size:15px;font-family:'Sarabun',sans-serif;border:2px solid rgba(255,255,255,.4);cursor:pointer}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div id="overlay"><div class="spinner"></div><p>กำลังบันทึก...</p></div>
+<div id="success">
+  <div class="si">🎉</div>
+  <h2>บันทึกสำเร็จ!</h2>
+  <p id="smsg">ส่งข้อมูลให้ Admin และเจ้าของสวนแล้วครับ</p>
+  <button class="btn-close" onclick="liff.closeWindow()">ปิดหน้าต่าง</button>
+</div>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-icon">🚛</div>
+  <h1>บันทึกรายงานขนส่ง</h1>
+  <p>SSB Smart Supply</p>
+</div>
+
+<!-- LINE Status -->
+<div class="line-status">
+  <div class="ls-dot"></div>
+  <div class="ls-text"><h3 id="drv-name">กำลังโหลด...</h3><p>เชื่อมต่อระบบ LINE สำเร็จ · <span id="drv-plate">—</span></p></div>
+</div>
+
+<div class="body">
+
+  <!-- Order info -->
+  <div class="order-banner" id="order-banner">
+    <div class="ob-id" id="ob-id">— รอโหลดออเดอร์ —</div>
+    <div class="ob-grid" id="ob-grid">
+      <div class="ob-item"><span>สวน</span><span id="ob-garden">—</span></div>
+      <div class="ob-item"><span>วันที่</span><span id="ob-date">—</span></div>
+      <div class="ob-item"><span>เวลา</span><span id="ob-time">—</span></div>
+      <div class="ob-item"><span>กระบะ</span><span id="ob-bin">—</span></div>
+      <div class="ob-item ob-full"><span>จุดรับ</span><span id="ob-pickup">—</span></div>
+    </div>
+    <div id="ob-extra" class="hide" style="margin-top:8px;padding:8px;background:rgba(124,58,237,.08);border-radius:8px;font-size:12px;color:var(--purple)">
+      🏭 <span id="ob-extra-txt"></span>
+    </div>
+    <div><span class="ob-status" id="ob-status">⏳ —</span></div>
+  </div>
+
+  <!-- Quick Actions (ตามสถานะ) -->
+  <div class="card" id="card-actions">
+    <div class="card-title"><span class="icon">⚡</span> การดำเนินงาน</div>
+    <div class="status-btns" id="status-btns">
+      <!-- จะ render ตาม status -->
+    </div>
+    <button class="btn-secondary" onclick="requestCancel()">⚠️ แจ้งขอยกเลิก/เหตุฉุกเฉิน</button>
+  </div>
+
+  <!-- ชั่งน้ำหนัก (แสดงเมื่อ arrived) -->
+  <div class="card hide" id="card-weight">
+    <div class="card-title"><span class="icon">⚖️</span> ชั่งน้ำหนักรถ</div>
+
+    <div class="wt-section-lbl">🔵 รถเปล่า (ก่อนบรรทุก)</div>
+    <div class="wt-grid" style="margin-bottom:14px">
+      <div><div class="wt-lbl">รถเบา<br>(กก.)</div><input class="wt-inp" type="number" id="w-empty" placeholder="0" oninput="calcNet()"></div>
+      <div><div class="wt-lbl">รถหนัก<br>(กก.)</div><input class="wt-inp" type="number" id="w-full" placeholder="0" oninput="calcNet()"></div>
+      <div>
+        <div class="wt-result">
+          <div class="lbl">สุทธิ</div>
+          <div class="val" id="net-val">0</div>
+          <div class="wt-unit">กก.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- อัปโหลดรูปใบชั่ง -->
+  <div class="card hide" id="card-photo">
+    <div class="card-title"><span class="icon">📸</span> รูปใบชั่ง / หลักฐาน</div>
+    <div class="photo-area" onclick="document.getElementById('inp-photo').click()">
+      <input type="file" id="inp-photo" accept="image/*" capture="environment" onchange="onPhoto(this)">
+      <div class="photo-icon">📷</div>
+      <h4>ถ่ายรูปหรือเลือกรูป</h4>
+      <p>ใบชั่งน้ำหนัก, หลักฐานส่งของ</p>
+    </div>
+    <div id="photo-preview">
+      <img id="preview-img" src="" alt="preview">
+      <button class="rem-btn" onclick="removePhoto()">🗑️ ลบรูป</button>
+    </div>
+  </div>
+
+  <!-- ปุ่ม Submit (แสดงเมื่อ arrived) -->
+  <div id="div-submit" class="hide">
+    <button class="btn-primary" id="btn-complete" onclick="submitComplete()">
+      ✅ ยืนยันเสร็จงาน
+    </button>
+    <p style="text-align:center;font-size:11px;color:var(--text-m);margin-top:8px">กรุณากรอกน้ำหนักและแนบรูปก่อนกดยืนยัน</p>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec';
+const LIFF_ID = '2010274217-SozYWeE5';
+let U = {}, activeOrder = null, photoBase64 = '';
+
+async function init() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    const p = await liff.getProfile();
+    U.userId = p.userId;
+
+    const [uRes, oRes] = await Promise.all([
+      fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`).then(r => r.json()),
+      fetch(`${GAS_URL}?action=getDriverOrder&userId=${p.userId}`).then(r => r.json())
+    ]);
+
+    if (uRes.status === 'ok') {
+      document.getElementById('drv-name').textContent = uRes.name || p.displayName;
+      document.getElementById('drv-plate').textContent = uRes.plate || '—';
+    }
+
+    if (oRes.status === 'ok' && oRes.orders.length > 0) {
+      activeOrder = oRes.orders[0];
+      _renderOrder(activeOrder);
+    } else {
+      document.getElementById('ob-id').textContent = '📭 ไม่มีงานที่รับอยู่ในขณะนี้';
+      document.getElementById('card-actions').classList.add('hide');
+    }
+  } catch(e) {
+    console.error(e);
+    document.getElementById('drv-name').textContent = '⚠️ โหลดไม่สำเร็จ';
+  }
+}
+
+function _renderOrder(o) {
+  document.getElementById('ob-id').textContent    = `📋 ${o['Order ID']}`;
+  document.getElementById('ob-garden').textContent = o['ชื่อสวน'] || '—';
+  document.getElementById('ob-date').textContent   = o['วันที่ต้องการ'] || '—';
+  document.getElementById('ob-time').textContent   = o['เวลา'] || '—';
+  document.getElementById('ob-bin').textContent    = `${o['จำนวนกระบะ']} ใบ`;
+  document.getElementById('ob-pickup').textContent = o['จุดรับ'] || '—';
+  document.getElementById('ob-status').textContent = `⏳ ${o['สถานะ']}`;
+
+  if (o['จุดรับเพิ่ม']) {
+    document.getElementById('ob-extra').classList.remove('hide');
+    document.getElementById('ob-extra-txt').textContent = o['จุดรับเพิ่ม'];
+  }
+
+  _renderActionButtons(o['สถานะ']);
+}
+
+function _renderActionButtons(status) {
+  const btns = document.getElementById('status-btns');
+  const ST = { assigned:'รับงานแล้ว', started:'เริ่มงานแล้ว', arrived:'ถึงลูกค้า' };
+
+  if (status === ST.assigned || status === 'รับงานแล้ว') {
+    btns.innerHTML = `
+      <button class="sbtn sbtn-start" onclick="doStart()">
+        <span class="sbtn-icon">🚀</span><span class="sbtn-lbl">เริ่มงาน / ออกเดินทาง</span>
+      </button>`;
+  } else if (status === ST.started || status === 'เริ่มงานแล้ว') {
+    btns.innerHTML = `
+      <button class="sbtn sbtn-arrive" onclick="doArrive()">
+        <span class="sbtn-icon">📍</span><span class="sbtn-lbl">ถึงหน้างานแล้ว</span>
+      </button>`;
+  } else if (status === ST.arrived || status === 'ถึงลูกค้า') {
+    btns.innerHTML = `<p style="font-size:13px;color:var(--purple);grid-column:1/-1;text-align:center">📍 อยู่หน้างาน — กรอกน้ำหนักและอัปโหลดรูปด้านล่าง</p>`;
+    document.getElementById('card-weight').classList.remove('hide');
+    document.getElementById('card-photo').classList.remove('hide');
+    document.getElementById('div-submit').classList.remove('hide');
+  } else {
+    btns.innerHTML = `<p style="font-size:13px;color:var(--text-m);grid-column:1/-1;text-align:center">${status}</p>`;
+  }
+}
+
+async function doStart() {
+  if (!confirm('ยืนยันเริ่มงาน / ออกเดินทาง?')) return;
+  _setLoading(true);
+  const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'driverStartJob', orderId: activeOrder['Order ID'], userId: U.userId }) }).then(x=>x.json());
+  _setLoading(false);
+  if (r.success) { alert('✅ บันทึกเวลาเริ่มงานแล้วครับ'); location.reload(); }
+  else alert('❌ ' + (r.error||'เกิดข้อผิดพลาด'));
+}
+
+async function doArrive() {
+  if (!confirm('ยืนยันถึงหน้างานแล้ว?')) return;
+  _setLoading(true);
+  const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'driverArrived', orderId: activeOrder['Order ID'], userId: U.userId }) }).then(x=>x.json());
+  _setLoading(false);
+  if (r.success) { alert('✅ บันทึกแล้วครับ'); location.reload(); }
+  else alert('❌ ' + (r.error||'เกิดข้อผิดพลาด'));
+}
+
+function calcNet() {
+  const e = parseFloat(document.getElementById('w-empty').value) || 0;
+  const f = parseFloat(document.getElementById('w-full').value)  || 0;
+  const net = Math.abs(f - e);
+  document.getElementById('net-val').textContent = net.toLocaleString();
+}
+
+function onPhoto(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    photoBase64 = e.target.result;
+    document.getElementById('preview-img').src = photoBase64;
+    document.getElementById('photo-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+function removePhoto() {
+  photoBase64 = '';
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('inp-photo').value = '';
+}
+
+async function submitComplete() {
+  const wEmpty = parseFloat(document.getElementById('w-empty').value) || 0;
+  const wFull  = parseFloat(document.getElementById('w-full').value)  || 0;
+  if (!wEmpty && !wFull) { alert('กรุณากรอกน้ำหนักรถครับ'); return; }
+  if (!confirm('ยืนยันเสร็จงาน?')) return;
+
+  _setLoading(true);
+  const r = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      action:    'driverComplete',
+      orderId:   activeOrder['Order ID'],
+      userId:    U.userId,
+      weightIn:  wEmpty,
+      weightOut: wFull,
+      photoUrl:  photoBase64 ? '[รูปอัปโหลดแล้ว]' : '' // TODO: อัปโหลดจริงผ่าน Drive API
+    })
+  }).then(x => x.json());
+  _setLoading(false);
+
+  if (r.success) {
+    const net = Math.abs(wFull - wEmpty);
+    document.getElementById('smsg').innerHTML =
+      `น้ำหนักสุทธิ: <b>${net.toLocaleString()} กก.</b><br>แจ้งเจ้าของสวนและ Admin แล้วครับ`;
+    document.getElementById('success').classList.add('show');
+  } else {
+    alert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
+  }
+}
+
+function requestCancel() {
+  const reason = prompt('กรุณาระบุสาเหตุที่ขอยกเลิก:');
+  if (reason === null) return;
+  fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action:'driverCancelRequest', orderId: activeOrder['Order ID'], userId: U.userId, reason })
+  }).then(r => r.json()).then(r => {
+    if (r.success) alert('📤 ส่งคำขอไปยัง Admin แล้วครับ รอการตัดสินใจ');
+    else alert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
+  });
+}
+
+function _setLoading(on) {
+  document.getElementById('overlay').classList.toggle('show', on);
+}
+
+init();
+</script>
+</body>
+</html>
