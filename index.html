@@ -298,7 +298,7 @@ function _handleRspoAutoToggle(rspoValue) {
       const chipText = chip.textContent.trim();
       
       // 🔒 แก้ไข Logic ตรงนี้ให้เช็กคำแบบแม่นยำ ไม่ใช้ .includes ตัวหนังสือซ้ำซ้อน
-      if (rspoValue === 'มี' && chipText === 'มี RSPO') {
+      if ((rspoValue === 'มี' || rspoValue === 'มี RSPO') && chipText === 'มี RSPO') {
         chip.classList.add('on');
       } else if (rspoValue === 'ไม่มี' && chipText === 'ไม่มี') {
         chip.classList.add('on');
