@@ -271,8 +271,15 @@ function onGardenChange(){
   }
   
   _handleRspoAutoToggle(opt.dataset.rspo || 'ไม่มี');
+  
+  if (opt.dataset.teamId && opt.dataset.teamId !== 'ไม่มี') {
+  // สลับชิปไปที่ "มีทีมตัด"
+  const teamChips = document.querySelectorAll('.card:nth-of-type(3) .chip');
+  teamChips.forEach(c => c.classList.remove('on'));
+  teamChips[1].classList.add('on');
+  document.getElementById('inp-team').classList.remove('hide');
+  document.getElementById('inp-team').value = opt.dataset.teamId;
 }
-
 function _fillBills(bills){
   const sel=document.getElementById('inp-bill');
   sel.innerHTML='<option value="">-- เลือกชื่อ --</option>';
