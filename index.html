@@ -423,6 +423,7 @@ async function submitForm() {
 
   if (!date)   { alert('กรุณาเลือกวันที่ครับ'); return; }
   if (!time)   { alert('กรุณาเลือกเวลาครับ');   return; }
+  if (!U.gardenId && userRole !== 'Ramp') { alert('กรุณาเลือกสวนครับ'); return; }
 
   // RSPO value
   const rspoChip = document.querySelector('#rspo-container .chip.on');
@@ -442,8 +443,8 @@ async function submitForm() {
     const payload = {
       action:      'submitOrder',
       userId:      U.userId,
-      gardenId:    U.gardenId    || '',
-      gardenName:  U.gardenName  || '',
+      gardenId:   U.gardenId   || 'RAMP',
+      gardenName: U.gardenName || U.name || '',
       date, time,
       billName:    bill,
       pickupPoint: pickup,
