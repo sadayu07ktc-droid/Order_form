@@ -127,10 +127,16 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
     <div id="inner-detail">
       <div class="stitle">🚛 รายละเอียดงาน</div>
       <div class="fld"><label>มาตรฐาน RSPO</label>
-        <div class="chips" id="rspo-container"><span class="chip on" onclick="pick(this)">ไม่มี</span><span class="chip" onclick="pick(this)">มี RSPO</span></div>
+        <div class="chips" id="rspo-container">
+          <span class="chip on" onclick="pick(this)">ไม่มี</span>
+          <span class="chip" onclick="pick(this)">มี RSPO</span>
+        </div>
       </div>
       <div class="fld"><label>ทีมตัด</label>
-        <div class="chips"><span class="chip on" onclick="pickSel(this,false,'inp-team')">ไม่มี</span><span class="chip" onclick="pickSel(this,true,'inp-team')">มีทีมตัด</span></div>
+        <div class="chips" id="team-chips">
+          <span class="chip on" onclick="pickSel(this,false,'inp-team')">ไม่มี</span>
+          <span class="chip" onclick="pickSel(this,true,'inp-team')">มีทีมตัด</span>
+        </div>
         <select class="inp hide" id="inp-team" style="margin-top:8px"><option value="">-- เลือกทีม --</option></select>
       </div>
     </div>
@@ -139,7 +145,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
   <div class="card">
     <div class="stitle">🧺 กระบะ + หมายเหตุ</div>
     <div class="fld"><label>จำนวนกระบะ <span class="req">*</span></label>
-      <div class="chips">
+      <div class="chips" id="bin-chips">
         <span class="chip on" onclick="pickSel(this,false,'inp-bin')">1</span>
         <span class="chip" onclick="pickSel(this,false,'inp-bin')">2</span>
         <span class="chip" onclick="pickSel(this,true,'inp-bin')">ระบุ</span>
@@ -168,6 +174,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqf
 const LIFF_ID = '2010274217-BF41B8c2';
 let U = {}, gData = {}, userRole = '';
 
+// ── Init ──────────────────────────────────────────────────
 async function init() {
   try {
     await liff.init({ liffId: LIFF_ID });
@@ -175,194 +182,281 @@ async function init() {
     const p = await liff.getProfile();
     U.userId = p.userId;
     document.getElementById('inp-date').min = new Date().toISOString().split('T')[0];
+
     const [uRes, gRes] = await Promise.all([
-      fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`).then(r=>r.json()),
-      fetch(`${GAS_URL}?action=getGardenData&userId=${p.userId}`).then(r=>r.json())
+      fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`).then(r => r.json()),
+      fetch(`${GAS_URL}?action=getGardenData&userId=${p.userId}`).then(r => r.json())
     ]);
+
     gData = gRes;
-    _fillTeams(gRes.teams||[]);
-    if(uRes.status==='ok') _setup(uRes, gRes);
-    else { document.getElementById('uname').textContent=p.displayName; }
-  } catch(e){ console.error(e); document.getElementById('uname').textContent='⚠️ โหลดไม่สำเร็จ'; }
+    _fillTeams(gRes.teams || []);
+
+    if (uRes.status === 'ok') {
+      _setup(uRes, gRes);
+    } else {
+      document.getElementById('uname').textContent = p.displayName;
+    }
+  } catch(e) {
+    console.error(e);
+    document.getElementById('uname').textContent = '⚠️ โหลดไม่สำเร็จ';
+  }
 }
 
-const roleLabel = {Owner:'เจ้าของสวน',Team:'ทีมตัด',Ramp:'ลานเท',Driver:'คนขับ',Admin:'Admin'};
-const roleIcon  = {Owner:'🌳',Team:'🌿',Ramp:'🏭',Admin:'⚙️'};
-const roleCardCls= {Owner:'uc-g',Team:'uc-g',Ramp:'uc-b',Admin:'uc-g'};
-const roleAvCls  = {Owner:'av-g',Team:'av-g',Ramp:'av-b',Admin:'av-i'};
-const roleBgCls  = {Owner:'bg-g',Team:'bg-g',Ramp:'bg-b',Admin:'bg-i'};
-  
-function _setup(u, g) {
-  U={...U,...u}; userRole=u.role;
-  document.getElementById('ucard').className   = 'user-card '+(roleCardCls[u.role]||'uc-g');
-  document.getElementById('uavatar').className = 'uc-avatar '+(roleAvCls[u.role]||'av-g');
-  document.getElementById('uavatar').textContent = roleIcon[u.role]||'👤';
-  document.getElementById('ubadge').className  = 'uc-badge '+(roleBgCls[u.role]||'bg-g');
-  document.getElementById('ubadge').textContent= roleLabel[u.role]||u.role;
+// ── Setup UI ตาม Role ─────────────────────────────────────
+const roleLabel  = { Owner:'เจ้าของสวน', Team:'ทีมตัด', Ramp:'ลานเท', Driver:'คนขับ', Admin:'Admin' };
+const roleIcon   = { Owner:'🌳', Team:'🌿', Ramp:'🏭', Admin:'⚙️' };
+const roleCardCls= { Owner:'uc-g', Team:'uc-g', Ramp:'uc-b', Admin:'uc-g' };
+const roleAvCls  = { Owner:'av-g', Team:'av-g', Ramp:'av-b', Admin:'av-i' };
+const roleBgCls  = { Owner:'bg-g', Team:'bg-g', Ramp:'bg-b', Admin:'bg-i' };
 
-  if(u.role==='Owner'){
-    document.getElementById('uname').textContent=u.gardenName;
-    document.getElementById('usub').textContent=`${u.phone} · ${u.gardenId}`;
-    const sel=document.getElementById('inp-garden');
-    sel.innerHTML=`<option value="${u.gardenId}" selected>${u.gardenName}</option>`;
-    sel.classList.add('ro'); U.gardenId=u.gardenId; U.gardenName=u.gardenName;
-    _fillBills(u.billNames||[]);
-    
-    // 🔥 ดึงข้อมูลจุดรับหรือพิกัดของสวนตัวเองมาแสดงอัตโนมัติ (แก้ไขตรงนี้)
+function _setup(u, g) {
+  U = { ...U, ...u };
+  userRole = u.role;
+
+  // แสดง user card
+  document.getElementById('ucard').className    = 'user-card ' + (roleCardCls[u.role] || 'uc-g');
+  document.getElementById('uavatar').className  = 'uc-avatar ' + (roleAvCls[u.role]   || 'av-g');
+  document.getElementById('uavatar').textContent = roleIcon[u.role] || '👤';
+  document.getElementById('ubadge').className   = 'uc-badge '  + (roleBgCls[u.role]   || 'bg-g');
+  document.getElementById('ubadge').textContent = roleLabel[u.role] || u.role;
+
+  if (u.role === 'Owner') {
+    // ── เจ้าของสวน ─────────────────────────────────────
+    document.getElementById('uname').textContent = u.gardenName;
+    document.getElementById('usub').textContent  = `${u.phone} · ${u.gardenId}`;
+
+    // ล็อก dropdown สวน
+    const sel = document.getElementById('inp-garden');
+    sel.innerHTML = `<option value="${u.gardenId}" selected>${u.gardenName}</option>`;
+    sel.classList.add('ro');
+    U.gardenId   = u.gardenId;
+    U.gardenName = u.gardenName;
+
+    // ดึงข้อมูลสวนจาก gData
     const myGarden = g.gardens.find(x => x.id === u.gardenId);
     if (myGarden) {
-      const pk = myGarden.pickupPoint;
+      // ชื่อในบิล
+      _fillBills(u.billNames || []);
+
+      // จุดรับ
+      const pk  = myGarden.pickupPoint;
       const loc = myGarden.location;
       if (!pk || pk === 'ไม่มี') {
         _fillPickups([loc || 'พิกัดสวนหลัก']);
       } else {
         _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
       }
+
+      // RSPO — ดึงจาก myGarden (ไม่ใช่ u)
+      _setRspo(myGarden.rspo || 'ไม่มี');
+
+      // ทีมตัด — ดึงจาก myGarden
+      _setTeam(myGarden.teamId || '');
     }
 
-    // 🔥 เปิดชิป RSPO อัตโนมัติสำหรับ Owner
-    _handleRspoAutoToggle(myGarden.rspo || 'ไม่มี');
-
-  } else if(u.role==='Ramp'){
-    document.getElementById('uname').textContent=u.name;
-    document.getElementById('usub').textContent=u.phone;
+  } else if (u.role === 'Ramp') {
+    // ── ลานเท ───────────────────────────────────────────
+    document.getElementById('uname').textContent = u.name;
+    document.getElementById('usub').textContent  = u.phone;
     document.getElementById('h-ramp').classList.remove('hide');
     document.getElementById('lk-bill').classList.remove('hide');
     document.getElementById('inner-bill').classList.add('locked');
     document.getElementById('lk-detail').classList.remove('hide');
     document.getElementById('inner-detail').classList.add('locked');
+
   } else {
-    document.getElementById('uname').textContent=u.name||u.gardenName;
-    document.getElementById('usub').textContent=u.phone;
-    if(u.role==='Admin') document.getElementById('h-admin').classList.remove('hide');
-    _fillGardens(g.gardens||[]);
+    // ── Admin / Team ─────────────────────────────────────
+    document.getElementById('uname').textContent = u.name || u.gardenName;
+    document.getElementById('usub').textContent  = u.phone;
+    if (u.role === 'Admin') document.getElementById('h-admin').classList.remove('hide');
+    _fillGardens(g.gardens || []);
   }
 }
 
-function _fillGardens(gs){
-  const sel=document.getElementById('inp-garden');
-  sel.innerHTML='<option value="">-- เลือกสวน --</option>';
-  gs.forEach(g=>{
-    const o=document.createElement('option');
-    o.value=g.id;
-    o.textContent=g.name;
-    o.dataset.bills=JSON.stringify(g.billNames||[]);
-    o.dataset.pickup=g.pickupPoint||''; 
-    o.dataset.location=g.location||'';   
-    o.dataset.rspo=g.rspo||'ไม่มี';
+// ── Fill Helpers ──────────────────────────────────────────
+function _fillGardens(gs) {
+  const sel = document.getElementById('inp-garden');
+  sel.innerHTML = '<option value="">-- เลือกสวน --</option>';
+  gs.forEach(g => {
+    const o = document.createElement('option');
+    o.value           = g.id;
+    o.textContent     = g.name;
+    o.dataset.bills   = JSON.stringify(g.billNames || []);
+    o.dataset.pickup  = g.pickupPoint || '';
+    o.dataset.location= g.location    || '';
+    o.dataset.rspo    = g.rspo        || 'ไม่มี';
+    o.dataset.teamId  = g.teamId      || '';
     sel.appendChild(o);
   });
 }
 
-function onGardenChange(){
-  const o=document.getElementById('inp-garden');
-  const opt=o.options[o.selectedIndex];
-  if(!opt || !opt.value) { _fillBills([]); _fillPickups([]); _handleRspoAutoToggle('ไม่มี'); return; }
-  U.gardenId=opt.value; U.gardenName=opt.textContent;
-  _fillBills(JSON.parse(opt.dataset.bills||'[]'));
-  
-  // 🔥 ดึงจุดรับ หรือสลับเป็นพิกัดสวนอัตโนมัติเมื่อ Admin เปลี่ยนสวน
-  const pk = opt.dataset.pickup;
+function _fillBills(bills) {
+  const sel = document.getElementById('inp-bill');
+  sel.innerHTML = '<option value="">-- เลือกชื่อ --</option>';
+  bills.forEach(b => {
+    const o = document.createElement('option');
+    o.value = o.textContent = b;
+    sel.appendChild(o);
+  });
+  if (bills.length === 1) sel.selectedIndex = 1;
+}
+
+function _fillPickups(pickups) {
+  const sel = document.getElementById('inp-pickup');
+  sel.innerHTML = '<option value="">-- เลือกจุดรับ --</option>';
+  pickups.forEach(p => {
+    const o = document.createElement('option');
+    o.value = o.textContent = p;
+    sel.appendChild(o);
+  });
+  if (pickups.length === 1) sel.selectedIndex = 1;
+}
+
+function _fillTeams(ts) {
+  const sel = document.getElementById('inp-team');
+  ts.forEach(t => {
+    const o = document.createElement('option');
+    o.value       = t.id;
+    o.textContent = t.name;
+    sel.appendChild(o);
+  });
+}
+
+// ── RSPO setter (ล็อกตามดาต้า) ────────────────────────────
+function _setRspo(rspoValue) {
+  const chips = document.querySelectorAll('#rspo-container .chip');
+  chips.forEach(chip => {
+    const txt = chip.textContent.trim();
+    const isMatch =
+      (rspoValue === 'มี' || rspoValue === 'มี RSPO') && txt === 'มี RSPO' ||
+      rspoValue === 'ไม่มี' && txt === 'ไม่มี';
+    chip.classList.toggle('on', isMatch);
+  });
+  // ล็อกไม่ให้กด
+  document.getElementById('rspo-container').style.pointerEvents = 'none';
+}
+
+// ── Team setter (auto-select จากดาต้า) ────────────────────
+function _setTeam(teamId) {
+  const chips   = document.querySelectorAll('#team-chips .chip');
+  const teamSel = document.getElementById('inp-team');
+
+  if (teamId && teamId !== 'ไม่มี') {
+    // สลับชิปไปที่ "มีทีมตัด"
+    chips.forEach(c => c.classList.remove('on'));
+    chips[1].classList.add('on');
+    teamSel.classList.remove('hide');
+    teamSel.value = teamId;
+  } else {
+    // สลับชิปกลับที่ "ไม่มี"
+    chips.forEach(c => c.classList.remove('on'));
+    chips[0].classList.add('on');
+    teamSel.classList.add('hide');
+  }
+}
+
+// ── Garden Change (Admin เปลี่ยนสวน) ─────────────────────
+function onGardenChange() {
+  const o   = document.getElementById('inp-garden');
+  const opt = o.options[o.selectedIndex];
+
+  if (!opt || !opt.value) {
+    _fillBills([]);
+    _fillPickups([]);
+    _setRspo('ไม่มี');
+    _setTeam('');
+    return;
+  }
+
+  U.gardenId   = opt.value;
+  U.gardenName = opt.textContent;
+
+  _fillBills(JSON.parse(opt.dataset.bills || '[]'));
+
+  const pk  = opt.dataset.pickup;
   const loc = opt.dataset.location;
   if (!pk || pk === 'ไม่มี') {
     _fillPickups([loc || 'พิกัดสวนหลัก']);
   } else {
     _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
   }
-  
-  _handleRspoAutoToggle(opt.dataset.rspo || 'ไม่มี');
-  
-  if (opt.dataset.teamId && opt.dataset.teamId !== 'ไม่มี') {
-  // สลับชิปไปที่ "มีทีมตัด"
-  const teamChips = document.querySelectorAll('.card:nth-of-type(3) .chip');
-  teamChips.forEach(c => c.classList.remove('on'));
-  teamChips[1].classList.add('on');
-  document.getElementById('inp-team').classList.remove('hide');
-  document.getElementById('inp-team').value = opt.dataset.teamId;
-}
-function _fillBills(bills){
-  const sel=document.getElementById('inp-bill');
-  sel.innerHTML='<option value="">-- เลือกชื่อ --</option>';
-  bills.forEach(b=>{const o=document.createElement('option');o.value=o.textContent=b;sel.appendChild(o);});
+
+  _setRspo(opt.dataset.rspo   || 'ไม่มี');
+  _setTeam(opt.dataset.teamId || '');
 }
 
-function _fillPickups(pickups){
-  const sel=document.getElementById('inp-pickup');
-  sel.innerHTML='<option value="">-- เลือกจุดรับ --</option>';
-  pickups.forEach(p=>{
-    const o=document.createElement('option');
-    o.value=o.textContent=p;
-    sel.appendChild(o);
-  });
-  if(pickups.length > 0) sel.selectedIndex = 1; 
-}
-function _handleRspoAutoToggle(rspoValue) {
-  const rspoChips = document.querySelectorAll('#inner-detail .chips:first-of-type .chip');
-  const rspoContainer = document.getElementById('rspo-container');
-  
-  if (rspoChips.length > 0) {
-    rspoChips.forEach(chip => {
-      const chipText = chip.textContent.trim();
-      
-      // 🔒 แก้ไข Logic ตรงนี้ให้เช็กคำแบบแม่นยำ ไม่ใช้ .includes ตัวหนังสือซ้ำซ้อน
-      if ((rspoValue === 'มี' || rspoValue === 'มี RSPO') && chipText === 'มี RSPO') {
-        chip.classList.add('on');
-      } else if (rspoValue === 'ไม่มี' && chipText === 'ไม่มี') {
-        chip.classList.add('on');
-      } else {
-        chip.classList.remove('on'); // ตัวที่ไม่ใช่ให้เอาสีเขียวออก
-      }
-    });
-  }
-  
-  // ล็อกไม่ให้กดสลับค่าเล่นเพื่อรักษาความถูกต้องของฐานข้อมูล
-  if (rspoContainer) {
-    rspoContainer.style.pointerEvents = 'none'; 
-    rspoContainer.style.opacity = '1'; // เปลี่ยนเป็น 1 เพื่อให้ข้อความชัดเจน ไม่เบลอจางจนมองยาก
-  }
+// ── Chip Helpers ──────────────────────────────────────────
+function pick(el) {
+  el.parentNode.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
 }
 
-function _fillTeams(ts){
-  const sel=document.getElementById('inp-team');
-  ts.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.name;sel.appendChild(o);});
+function pickSel(el, show, id) {
+  pick(el);
+  document.getElementById(id).classList.toggle('hide', !show);
 }
 
-function pick(el){el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');}
-function pickSel(el,show,id){pick(el);document.getElementById(id).classList.toggle('hide',!show);}
+// ── Submit ────────────────────────────────────────────────
+async function submitForm() {
+  const date   = document.getElementById('inp-date').value;
+  const time   = document.getElementById('inp-time').value;
+  const bill   = document.getElementById('inp-bill').value;
+  const pickup = document.getElementById('inp-pickup').value;
+  const binEl  = document.getElementById('inp-bin');
+  const teamEl = document.getElementById('inp-team');
 
-async function submitForm(){
-  const date=document.getElementById('inp-date').value;
-  const time=document.getElementById('inp-time').value;
-  const bill=document.getElementById('inp-bill').value;
-  const pickup=document.getElementById('inp-pickup').value;
-  const binEl=document.getElementById('inp-bin');
-  const teamEl=document.getElementById('inp-team');
-  if(!date){alert('กรุณาเลือกวันที่ครับ');return;}
-  if(!time){alert('กรุณาเลือกเวลาครับ');return;}
+  if (!date)   { alert('กรุณาเลือกวันที่ครับ'); return; }
+  if (!time)   { alert('กรุณาเลือกเวลาครับ');   return; }
 
-  const rspoText=document.querySelector('#inner-detail .chips:first-of-type .chip.on')?.textContent||'ไม่มี';
-  // แปลงค่าส่งกลับไปหาหลังบ้านให้บันทึกคำว่า 'มี' หรือ 'ไม่มี' ตามโครงสร้างชีตหลัก
-  const rspo = rspoText.includes('มี') && !rspoText.includes('ไม่มี') ? 'มี' : 'ไม่มี';
+  // RSPO value
+  const rspoChip = document.querySelector('#rspo-container .chip.on');
+  const rspoText = rspoChip ? rspoChip.textContent.trim() : 'ไม่มี';
+  const rspo     = (rspoText === 'มี RSPO') ? 'มี' : 'ไม่มี';
 
-  const binChip=document.querySelector('.card:nth-of-type(4) .chip.on')?.textContent;
-  const binCount=(!binEl.classList.contains('hide'))?parseInt(binEl.value)||3:parseInt(binChip)||1;
+  // bin count
+  const binChip  = document.querySelector('#bin-chips .chip.on');
+  const binCount = !binEl.classList.contains('hide')
+    ? parseInt(binEl.value) || 3
+    : parseInt(binChip ? binChip.textContent : '1') || 1;
 
   document.getElementById('overlay').classList.add('show');
-  document.getElementById('btn-sub').disabled=true;
-  try{
-    const payload={action:'submitOrder',userId:U.userId,gardenId:U.gardenId||'',gardenName:U.gardenName||'',
-      date,time,billName:bill,pickupPoint:pickup,rspo,
-      teamId:(!teamEl.classList.contains('hide'))?teamEl.value:'ไม่มี',
-      binCount,note:document.getElementById('inp-note').value};
-    const res=await fetch(GAS_URL,{method:'POST',body:JSON.stringify(payload)});
-    const r=await res.json();
+  document.getElementById('btn-sub').disabled = true;
+
+  try {
+    const payload = {
+      action:      'submitOrder',
+      userId:      U.userId,
+      gardenId:    U.gardenId    || '',
+      gardenName:  U.gardenName  || '',
+      date, time,
+      billName:    bill,
+      pickupPoint: pickup,
+      rspo,
+      teamId:      !teamEl.classList.contains('hide') ? teamEl.value : 'ไม่มี',
+      binCount,
+      note:        document.getElementById('inp-note').value
+    };
+
+    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+    const r   = await res.json();
+
     document.getElementById('overlay').classList.remove('show');
-    if(r.success){
-      document.getElementById('success-msg').innerHTML=`รับออเดอร์ <b>${r.orderId}</b> แล้วครับ<br>Admin จะยืนยันเร็วๆ นี้`;
+
+    if (r.success) {
+      document.getElementById('success-msg').innerHTML =
+        `รับออเดอร์ <b>${r.orderId}</b> แล้วครับ<br>Admin จะยืนยันเร็วๆ นี้`;
       document.getElementById('success').classList.add('show');
-    } else {alert('❌ '+(r.error||'เกิดข้อผิดพลาด'));document.getElementById('btn-sub').disabled=false;}
-  }catch(e){document.getElementById('overlay').classList.remove('show');alert('❌ เชื่อมต่อไม่ได้');document.getElementById('btn-sub').disabled=false;}
+    } else {
+      alert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
+      document.getElementById('btn-sub').disabled = false;
+    }
+  } catch(e) {
+    document.getElementById('overlay').classList.remove('show');
+    alert('❌ เชื่อมต่อไม่ได้');
+    document.getElementById('btn-sub').disabled = false;
+  }
 }
+
 init();
 </script>
 </body>
