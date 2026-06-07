@@ -211,12 +211,6 @@ function _setup(u, g) {
     sel.innerHTML=`<option value="${u.gardenId}" selected>${u.gardenName}</option>`;
     sel.classList.add('ro'); U.gardenId=u.gardenId; U.gardenName=u.gardenName;
     _fillBills(u.billNames||[]);
-    // Pre-select RSPO ตามค่าในชีต
-    if (u.rspo === 'มี') {
-      const rspoChips = document.querySelectorAll('#inner-detail .chips:first-of-type .chip');
-      if (rspoChips[1]) { pick(rspoChips[1]); }
-    }
-  }  // ปิด Owner block
     // Pickup: เพิ่ม dropdown จาก DATA (สามารถดึงจาก gardenData ได้)
   } else if(u.role==='Ramp'){
     document.getElementById('uname').textContent=u.name;
@@ -290,39 +284,7 @@ async function submitForm(){
     } else {alert('❌ '+(r.error||'เกิดข้อผิดพลาด'));document.getElementById('btn-sub').disabled=false;}
   }catch(e){document.getElementById('overlay').classList.remove('show');alert('❌ เชื่อมต่อไม่ได้');document.getElementById('btn-sub').disabled=false;}
 }
-async function debugTest() {
-  try {
-    await liff.init({ liffId: LIFF_ID });
-    const logEl = document.createElement('pre');
-    logEl.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#000;color:#0f0;font-size:11px;padding:8px;z-index:9999;max-height:50vh;overflow:auto';
-    document.body.appendChild(logEl);
-
-    const log = (msg) => { logEl.textContent += msg + '\n'; console.log(msg); };
-
-    log('1. LIFF init OK');
-    log('isLoggedIn: ' + liff.isLoggedIn());
-
-    if (!liff.isLoggedIn()) { liff.login(); return; }
-
-    const p = await liff.getProfile();
-    log('2. UID: ' + p.userId);
-
-    const res = await fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`);
-    const data = await res.json();
-    log('3. getUser: ' + JSON.stringify(data));
-
-    const res2 = await fetch(`${GAS_URL}?action=getGardenData&userId=${p.userId}`);
-    const data2 = await res2.json();
-    log('4. gardenData: ' + JSON.stringify(data2).substring(0, 200));
-
-  } catch(e) {
-    document.body.innerHTML = '<pre style="color:red;padding:20px">' + e.toString() + '</pre>';
-  }
-}
-
-debugTest(); // ← ชั่วคราว
-// init();
-
+init();
 </script>
 </body>
 </html>
