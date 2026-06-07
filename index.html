@@ -89,7 +89,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
   <div class="hint hw hide" id="h-ramp">🔒 ลานเท: กรอกได้เฉพาะ วันที่ · เวลา · กระบะ · หมายเหตุ</div>
   <div class="hint hi hide" id="h-admin">⚙️ Admin: เลือกสวนได้จาก dropdown</div>
 
-  <!-- วันและเวลา -->
   <div class="card">
     <div class="stitle">📅 วันและเวลา</div>
     <div class="row2">
@@ -105,7 +104,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
     </div>
   </div>
 
-  <!-- บิล/จุดรับ -->
   <div class="card" id="card-bill">
     <span class="lkbadge hide" id="lk-bill">🔒 ล็อก</span>
     <div id="inner-bill">
@@ -124,13 +122,12 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
     </div>
   </div>
 
-  <!-- รายละเอียด -->
   <div class="card" id="card-detail">
     <span class="lkbadge hide" id="lk-detail">🔒 ล็อก</span>
     <div id="inner-detail">
       <div class="stitle">🚛 รายละเอียดงาน</div>
       <div class="fld"><label>มาตรฐาน RSPO</label>
-        <div class="chips"><span class="chip on" onclick="pick(this)">ไม่มี</span><span class="chip" onclick="pick(this)">มี RSPO</span></div>
+        <div class="chips" id="rspo-container"><span class="chip on" onclick="pick(this)">ไม่มี</span><span class="chip" onclick="pick(this)">มี RSPO</span></div>
       </div>
       <div class="fld"><label>ทีมตัด</label>
         <div class="chips"><span class="chip on" onclick="pickSel(this,false,'inp-team')">ไม่มี</span><span class="chip" onclick="pickSel(this,true,'inp-team')">มีทีมตัด</span></div>
@@ -139,7 +136,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
     </div>
   </div>
 
-  <!-- กระบะ + หมายเหตุ -->
   <div class="card">
     <div class="stitle">🧺 กระบะ + หมายเหตุ</div>
     <div class="fld"><label>จำนวนกระบะ <span class="req">*</span></label>
@@ -211,13 +207,16 @@ function _setup(u, g) {
     sel.innerHTML=`<option value="${u.gardenId}" selected>${u.gardenName}</option>`;
     sel.classList.add('ro'); U.gardenId=u.gardenId; U.gardenName=u.gardenName;
     _fillBills(u.billNames||[]);
-    // Pre-select RSPO ตามค่าในชีต
-    if (u.rspo === 'มี') {
-      const rspoChips = document.querySelectorAll('#inner-detail .chips:first-of-type .chip');
-      if (rspoChips[1]) { pick(rspoChips[1]); }
+    
+    // ตั้งค่าจุดรับของสวนประเภท Owner เข้า Dropdown
+    if (u.pickupPoint) {
+      _fillPickups([u.pickupPoint]);
     }
-    // Pickup: เพิ่ม dropdown จาก DATA (สามารถดึงจาก gardenData ได้)
-    } else if(u.role==='Ramp'){
+
+    // Pre-select RSPO ตามค่าเริ่มต้นในฐานข้อมูลของ Owner คนนั้นๆ
+    _handleRspoAutoToggle(u.rspo || 'ไม่มี');
+    
+  } else if(u.role==='Ramp'){
     document.getElementById('uname').textContent=u.name;
     document.getElementById('usub').textContent=u.phone;
     document.getElementById('h-ramp').classList.remove('hide');
@@ -236,19 +235,76 @@ function _setup(u, g) {
 function _fillGardens(gs){
   const sel=document.getElementById('inp-garden');
   sel.innerHTML='<option value="">-- เลือกสวน --</option>';
-  gs.forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.name;o.dataset.bills=JSON.stringify(g.billNames||[]);sel.appendChild(o);});
+  gs.forEach(g=>{
+    const o=document.createElement('option');
+    o.value=g.id;
+    o.textContent=g.name;
+    o.dataset.bills=JSON.stringify(g.billNames||[]);
+    o.dataset.pickup=g.pickupPoint||''; // ฝากข้อมูลจุดรับไว้ที่ Dropdown
+    o.dataset.rspo=g.rspo||'ไม่มี';       // ฝากข้อมูลมาตรฐาน RSPO ไว้ที่ Dropdown
+    sel.appendChild(o);
+  });
 }
+
+// ── 🛠️ ฟังก์ชันที่แก้ไขเพิ่ม: สลับชิป RSPO อัตโนมัติเมื่อสวนเปลี่ยน ──
 function onGardenChange(){
   const o=document.getElementById('inp-garden');
   const opt=o.options[o.selectedIndex];
+  if(!opt.value) {
+    _fillBills([]);
+    _fillPickups([]);
+    _handleRspoAutoToggle('ไม่มี');
+    return;
+  }
   U.gardenId=opt.value; U.gardenName=opt.textContent;
   _fillBills(JSON.parse(opt.dataset.bills||'[]'));
+  
+  // จัดการดึงข้อมูลจุดรับเข้า Dropdown
+  const pk = opt.dataset.pickup ? [opt.dataset.pickup] : [];
+  _fillPickups(pk);
+
+  // ดึงค่า RSPO มาเรียกคำสั่งเปิด-ปิดชิปบนหน้าจอโดยอัตโนมัติ
+  const currentRspoValue = opt.dataset.rspo || 'ไม่มี';
+  _handleRspoAutoToggle(currentRspoValue);
 }
+
+// ฟังก์ชันควบคุมการเปลี่ยนคลาสชิปและการควบคุมการกด (UX ป้องกันข้อผิดพลาด)
+function _handleRspoAutoToggle(rspoValue) {
+  const rspoChips = document.querySelectorAll('#inner-detail .chips:first-of-type .chip');
+  const rspoContainer = document.getElementById('rspo-container');
+  
+  if (rspoChips.length > 0) {
+    rspoChips.forEach(chip => {
+      const chipText = chip.textContent.trim();
+      // แปลงคำให้เช็กได้แม่นยำขึ้น ทั้งคำว่า "มี" และ "มี RSPO"
+      if ((rspoValue === 'มี' && chipText.includes('มี RSPO')) || (rspoValue === 'ไม่มี' && chipText === 'ไม่มี')) {
+        chip.classList.add('on');
+      } else {
+        chip.classList.remove('on');
+      }
+    });
+  }
+
+  // ล็อกไม่ให้ผู้ใช้กดเล่นซ้ำซ้อน เพราะระบบดึงข้อมูลที่แท้จริงจากหลังบ้านมาให้แล้ว
+  if (rspoContainer) {
+    rspoContainer.style.pointerEvents = 'none'; 
+    rspoContainer.style.opacity = '0.85';       
+  }
+}
+
 function _fillBills(bills){
   const sel=document.getElementById('inp-bill');
   sel.innerHTML='<option value="">-- เลือกชื่อ --</option>';
   bills.forEach(b=>{const o=document.createElement('option');o.value=o.textContent=b;sel.appendChild(o);});
 }
+
+function _fillPickups(pickups){
+  const sel=document.getElementById('inp-pickup');
+  sel.innerHTML='<option value="">-- เลือกจุดรับ --</option>';
+  pickups.forEach(p=>{const o=document.createElement('option');o.value=o.textContent=p;sel.appendChild(o);});
+  if(pickups.length > 0) sel.selectedIndex = 1; // เลือกให้ทันทีถ้ามีรายการเดียว
+}
+
 function _fillTeams(ts){
   const sel=document.getElementById('inp-team');
   ts.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.name;sel.appendChild(o);});
@@ -264,12 +320,15 @@ async function submitForm(){
   const pickup=document.getElementById('inp-pickup').value;
   const binEl=document.getElementById('inp-bin');
   const teamEl=document.getElementById('inp-team');
-  const rspoEl=document.querySelector('.chips .chip.on');
   if(!date){alert('กรุณาเลือกวันที่ครับ');return;}
   if(!time){alert('กรุณาเลือกเวลาครับ');return;}
+  if(!bill){alert('กรุณาเลือกชื่อในบิลครับ');return;}
+  if(!pickup){alert('กรุณาเลือกจุดรับครับ');return;}
 
-  const chips=document.querySelectorAll('#card-detail .chip.on');
-  const rspo=document.querySelector('#inner-detail .chips:first-of-type .chip.on')?.textContent||'ไม่มี';
+  const rspoText=document.querySelector('#inner-detail .chips:first-of-type .chip.on')?.textContent||'ไม่มี';
+  // แปลงค่าข้อความปุ่ม "มี RSPO" ให้กลายเป็นสถานะคำว่า "มี" ส่งกลับไปหาหลังบ้านให้เข้าล็อกเดิม
+  const rspo = rspoText.includes('มี RSPO') ? 'มี' : 'ไม่มี';
+
   const binChip=document.querySelector('.card:nth-of-type(4) .chip.on')?.textContent;
   const binCount=(!binEl.classList.contains('hide'))?parseInt(binEl.value)||3:parseInt(binChip)||1;
 
