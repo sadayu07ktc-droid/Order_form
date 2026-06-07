@@ -171,6 +171,25 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqf
 const LIFF_ID = '2010274217-BF41B8c2';
 let U = {}, gData = {}, userRole = '';
 
+// ── Filter Time ───────────────────────────────────────────
+function filterTime() {
+  const selectedDate = document.getElementById('inp-date').value;
+  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const minHour = (selectedDate === today || !selectedDate)
+    ? now.getHours() + 2
+    : 0;
+  const timeSel = document.getElementById('inp-time');
+  timeSel.innerHTML = '<option value="">-- เลือก --</option>';
+  for (let h = 0; h <= 23; h++) {
+    if (h < minHour) continue;
+    const val = String(h).padStart(2, '0') + ':00';
+    const o = document.createElement('option');
+    o.value = o.textContent = val;
+    timeSel.appendChild(o);
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────
 async function init() {
   try {
@@ -179,38 +198,15 @@ async function init() {
     const p = await liff.getProfile();
     U.userId = p.userId;
     document.getElementById('inp-date').min = new Date().toISOString().split('T')[0];
-
-    // กรองเวลาตามวันที่เลือก
-    function filterTime() {
-      const selectedDate = document.getElementById('inp-date').value;
-      const today = new Date().toISOString().split('T')[0];
-      const now = new Date();
-      const minHour = (selectedDate === today || !selectedDate)
-        ? now.getHours() + 2
-        : 0; // วันอื่น — แสดงทั้งหมด
-
-      const timeSel = document.getElementById('inp-time');
-      timeSel.innerHTML = '<option value="">-- เลือก --</option>';
-      for (let h = 0; h <= 23; h++) {
-        if (h < minHour) continue;
-        const val = String(h).padStart(2, '0') + ':00';
-        const o = document.createElement('option');
-        o.value = o.textContent = val;
-        timeSel.appendChild(o);
-      }
-    }
-
-    filterTime(); // รันตอนโหลด
+    filterTime();
     document.getElementById('inp-date').addEventListener('change', filterTime);
-    
+
     const [uRes, gRes] = await Promise.all([
       fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`).then(r => r.json()),
       fetch(`${GAS_URL}?action=getGardenData&userId=${p.userId}`).then(r => r.json())
     ]);
-
     gData = gRes;
     _fillTeams(gRes.teams || []);
-
     if (uRes.status === 'ok') {
       _setup(uRes, gRes);
     } else {
