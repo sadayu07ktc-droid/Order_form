@@ -182,7 +182,17 @@ async function init() {
     const p = await liff.getProfile();
     U.userId = p.userId;
     document.getElementById('inp-date').min = new Date().toISOString().split('T')[0];
-
+    
+    // กรองเวลาใน dropdown ให้เหลือแค่ปัจจุบัน + 2 ชั่วโมงขึ้นไป
+    const now = new Date();
+    const minHour = now.getHours() + 2;
+    const timeSel = document.getElementById('inp-time');
+    Array.from(timeSel.options).forEach(opt => {
+      if (!opt.value) return; // ข้าม -- เลือก --
+      const h = parseInt(opt.value.split(':')[0]);
+      if (h < minHour) opt.style.display = 'none';
+    });
+    
     const [uRes, gRes] = await Promise.all([
       fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`).then(r => r.json()),
       fetch(`${GAS_URL}?action=getGardenData&userId=${p.userId}`).then(r => r.json())
