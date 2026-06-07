@@ -92,7 +92,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
   <div class="card">
     <div class="stitle">📅 วันและเวลา</div>
     <div class="row2">
-      <div class="fld" style="margin:0"><label>วันที่ <span class="req">*</span></label><input class="inp" type="date" id="inp-date"></div>
+      <div class="fld" style="margin:0"><label>วันที่ <span class="req">*</span></label><input class="inp" type="date" id="inp-date" placeholder="เลือกวันที่"></div>
       <div class="fld" style="margin:0"><label>เวลา <span class="req">*</span></label>
         <select class="inp" id="inp-time">
           <option value="">-- เลือก --</option>
@@ -242,7 +242,7 @@ function _setup(u, g) {
       const pk  = myGarden.pickupPoint;
       const loc = myGarden.location;
       if (!pk || pk === 'ไม่มี') {
-        _fillPickups([loc || 'พิกัดสวนหลัก']);
+        _fillPickups([U.gardenName || 'สวนหลัก']);
       } else {
         _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
       }
@@ -376,7 +376,7 @@ function onGardenChange() {
   const pk  = opt.dataset.pickup;
   const loc = opt.dataset.location;
   if (!pk || pk === 'ไม่มี') {
-    _fillPickups([loc || 'พิกัดสวนหลัก']);
+    _fillPickups([opt.textContent || 'สวนหลัก']);
   } else {
     _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
   }
