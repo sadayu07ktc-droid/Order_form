@@ -444,17 +444,18 @@ async function submitForm() {
 
   try {
     const payload = {
-      action:      'submitOrder',
-      userId:      U.userId,
-      gardenId:   U.gardenId   || 'RAMP',
-      gardenName: U.gardenName || U.name || '',
-      date, time,
-      billName:    bill,
+      action: 'submitOrder',
+      userId: U.userId,
+      gardenId: U.gardenId || '',
+      gardenName: U.gardenName || '',
+      date,
+      time,
+      billName: bill,
       pickupPoint: pickup,
-      rspo,
-      teamId:      !teamEl.classList.contains('hide') ? teamEl.value : 'ไม่มี',
+      rspo: document.querySelector('#fld-rspo .chip.on')?.textContent === 'มี RSPO' ? 'มี' : 'ไม่มี', // ✅ ตรงนี้
+      teamId: (!teamEl.classList.contains('hide')) ? teamEl.value : 'ไม่มี',
       binCount,
-      note:        document.getElementById('inp-note').value
+      note: document.getElementById('inp-note').value
     };
 
     const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
