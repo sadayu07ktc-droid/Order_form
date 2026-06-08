@@ -352,7 +352,7 @@ function _setRspo(rspoValue) {
     chip.classList.toggle('on', isMatch);
   });
   // ล็อกไม่ให้กด
-  document.getElementById('rspo-container').style.pointerEvents = 'none';
+  //document.getElementById('rspo-container').style.pointerEvents = 'none';
 }
 
 // ── Team setter (auto-select จากดาต้า) ────────────────────
@@ -452,7 +452,10 @@ async function submitForm() {
       time,
       billName: bill,
       pickupPoint: pickup,
-      rspo: document.querySelector('#fld-rspo .chip.on')?.textContent === 'มี RSPO' ? 'มี' : 'ไม่มี', // ✅ ตรงนี้
+      
+      // ✅ แก้บรรทัดนี้: นำตัวแปร rspo ที่คำนวณไว้ด้านบนมาใส่ได้เลย
+      rspo: rspo, 
+
       teamId: (!teamEl.classList.contains('hide')) ? teamEl.value : 'ไม่มี',
       binCount,
       note: document.getElementById('inp-note').value
