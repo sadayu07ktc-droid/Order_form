@@ -13,6 +13,7 @@
   --cream:#F5F0E8;--cream2:#EDE7D9;--cream3:#FDFAF5;
   --text:#2C3E1F;--text-m:#5C6B4A;--text-l:#8B9E7A;
   --border:rgba(74,124,63,.18);--red:#DC2626;
+  --indigo:#4F46E5;--indigo-l:#EEF2FF;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;padding-bottom:32px}
@@ -24,28 +25,37 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .user-card{border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .uc-g{background:var(--green-l);border:.5px solid var(--border)}
 .uc-b{background:var(--cream2);border:.5px solid rgba(139,115,85,.25)}
+.uc-i{background:var(--indigo-l);border:.5px solid rgba(79,70,229,.2)}
 .uc-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.av-g{background:var(--green)}.av-b{background:var(--brown)}.av-i{background:#6366F1}
+.av-g{background:var(--green)}.av-b{background:var(--brown)}.av-i{background:var(--indigo)}
 .uc-name{font-size:14px;font-weight:600;color:var(--text)}
 .uc-sub{font-size:11px;color:var(--text-m);margin-top:2px}
 .uc-badge{margin-left:auto;font-size:10px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;color:#fff;flex-shrink:0}
-.bg-g{background:var(--green)}.bg-b{background:var(--brown)}.bg-i{background:#6366F1}
+.bg-g{background:var(--green)}.bg-b{background:var(--brown)}.bg-i{background:var(--indigo)}
 .hint{font-size:11px;padding:6px 10px;border-radius:0 6px 6px 0;margin-bottom:14px}
 .hw{background:#EFE9DC;border-left:3px solid var(--brown-l);color:var(--brown)}
 .hi{background:var(--green-pale);border-left:3px solid var(--green);color:var(--green-d)}
 .card{background:var(--cream3);border:.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;position:relative}
+/* card พิเศษสำหรับ Admin: ขอบสีน้ำเงิน */
+.card-admin{background:var(--indigo-l);border:.5px solid rgba(79,70,229,.3);border-radius:12px;padding:14px;margin-bottom:12px;position:relative}
 .stitle{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--brown);display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.stitle-admin{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--indigo);display:flex;align-items:center;gap:6px;margin-bottom:12px}
 .fld{margin-bottom:12px}.fld:last-child{margin-bottom:0}
 .fld label{font-size:12px;color:var(--text-m);display:block;margin-bottom:5px}
 .req{color:var(--red)}
 .inp{width:100%;font-size:14px;font-family:'Sarabun',sans-serif;background:var(--cream);border:.5px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none}
 .inp:focus{border-color:var(--green)}
 .inp.ro{background:var(--cream2);color:var(--text-m)}
+.inp-admin{background:#fff;border:.5px solid rgba(79,70,229,.3)}
+.inp-admin:focus{border-color:var(--indigo)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .chips{display:flex;gap:7px;flex-wrap:wrap}
 .chip{padding:7px 14px;border-radius:999px;border:.5px solid var(--border);font-size:12px;font-family:'Sarabun',sans-serif;cursor:pointer;color:var(--text-m);background:var(--cream);transition:all .15s;user-select:none}
 .chip.on{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+.chip-admin{padding:7px 14px;border-radius:999px;border:.5px solid rgba(79,70,229,.3);font-size:12px;font-family:'Sarabun',sans-serif;cursor:pointer;color:var(--indigo);background:#fff;transition:all .15s;user-select:none}
+.chip-admin.on{background:var(--indigo);border-color:var(--indigo);color:#fff;font-weight:600}
 .lkbadge{position:absolute;top:10px;right:12px;font-size:9px;color:var(--brown);background:var(--cream2);border:.5px solid var(--brown-l);border-radius:999px;padding:2px 8px;display:inline-flex;align-items:center;gap:3px}
+.admin-badge{position:absolute;top:10px;right:12px;font-size:9px;color:var(--indigo);background:#fff;border:.5px solid rgba(79,70,229,.3);border-radius:999px;padding:2px 8px;display:inline-flex;align-items:center;gap:3px}
 .locked{filter:blur(2.5px);opacity:.5;pointer-events:none;user-select:none}
 .stat-pill{display:inline-flex;align-items:center;gap:4px;background:#FFF8E8;border:.5px solid var(--brown-l);color:var(--brown);font-size:11px;padding:4px 10px;border-radius:8px}
 .btn-submit{width:100%;padding:14px;border-radius:12px;background:var(--green);color:#fff;font-size:16px;font-weight:600;font-family:'Sarabun',sans-serif;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
@@ -64,6 +74,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 #success p{font-size:14px;color:var(--text-m);line-height:1.8}
 .btn-close{margin-top:10px;padding:12px 32px;border-radius:999px;background:var(--green);color:#fff;font-size:15px;font-family:'Sarabun',sans-serif;border:none;cursor:pointer}
 .hide{display:none}
+/* driver info chip */
+.driver-info{font-size:11px;color:var(--text-m);padding:6px 10px;background:rgba(79,70,229,.06);border-radius:8px;margin-top:6px;display:none}
 </style>
 </head>
 <body>
@@ -157,6 +169,53 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════════════════════
+       ADMIN ONLY: มอบหมายคนขับ
+  ═══════════════════════════════════════════════════════ -->
+  <div class="card-admin hide" id="card-assign">
+    <span class="admin-badge">⚙️ เฉพาะ Admin</span>
+    <div class="stitle-admin" style="margin-top:4px">🚗 มอบหมายคนขับ</div>
+
+    <!-- 1) ออเดอร์ที่ยังไม่มีคนขับ -->
+    <div class="fld">
+      <label>ออเดอร์ที่ยังไม่มีคนขับรับงาน</label>
+      <select class="inp inp-admin" id="inp-assign-order" onchange="onAssignOrderChange()">
+        <option value="">-- ออเดอร์ใหม่ (ไม่ผูกกับออเดอร์เดิม) --</option>
+      </select>
+    </div>
+
+    <!-- 2) คนขับที่ว่าง -->
+    <div class="fld">
+      <label>คนขับ (สถานะว่าง) <span class="req">*</span></label>
+      <select class="inp inp-admin" id="inp-driver" onchange="onDriverChange()">
+        <option value="">-- เลือกคนขับ --</option>
+      </select>
+      <div class="driver-info" id="driver-info">—</div>
+    </div>
+
+    <!-- 3) ทะเบียนรถ -->
+    <div class="fld">
+      <label>ทะเบียนรถ <span class="req">*</span></label>
+      <div class="chips" id="plate-chips" style="margin-bottom:8px">
+        <!-- chips จะ generate จาก JS -->
+      </div>
+      <select class="inp inp-admin hide" id="inp-plate-custom" style="margin-top:0">
+        <option value="">-- เลือกทะเบียน --</option>
+      </select>
+    </div>
+
+    <!-- 4) ประเภทงาน -->
+    <div class="fld" style="margin:0">
+      <label>ประเภทงาน</label>
+      <div class="chips" id="jobtype-chips">
+        <span class="chip-admin on" onclick="pickAdmin(this,'jobtype-chips')">ปาล์ม</span>
+        <span class="chip-admin" onclick="pickAdmin(this,'jobtype-chips')">ยาง</span>
+        <span class="chip-admin" onclick="pickAdmin(this,'jobtype-chips')">อื่นๆ</span>
+      </div>
+    </div>
+  </div>
+  <!-- ══ END ADMIN CARD ═══════════════════════════════════ -->
+
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:13px;color:var(--text-m)">สถานะเริ่มต้น</span>
     <span class="stat-pill">⏳ รอยืนยัน</span>
@@ -177,9 +236,7 @@ function filterTime() {
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
   const thHour = (now.getUTCHours() + 7) % 24;
-  const minHour = (selectedDate === today || !selectedDate)
-    ? thHour + 2
-    : 0;
+  const minHour = (selectedDate === today || !selectedDate) ? thHour + 2 : 0;
   const timeSel = document.getElementById('inp-time');
   timeSel.innerHTML = '<option value="">-- เลือก --</option>';
   for (let h = 0; h <= 23; h++) {
@@ -220,17 +277,16 @@ async function init() {
 }
 
 // ── Setup UI ตาม Role ─────────────────────────────────────
-const roleLabel  = { Owner:'เจ้าของสวน', Team:'ทีมตัด', Ramp:'ลานเท', Driver:'คนขับ', Admin:'Admin' };
-const roleIcon   = { Owner:'🌳', Team:'🌿', Ramp:'🏭', Admin:'⚙️' };
-const roleCardCls= { Owner:'uc-g', Team:'uc-g', Ramp:'uc-b', Admin:'uc-g' };
-const roleAvCls  = { Owner:'av-g', Team:'av-g', Ramp:'av-b', Admin:'av-i' };
-const roleBgCls  = { Owner:'bg-g', Team:'bg-g', Ramp:'bg-b', Admin:'bg-i' };
+const roleLabel   = { Owner:'เจ้าของสวน', Team:'ทีมตัด', Ramp:'ลานเท', Driver:'คนขับ', Admin:'Admin' };
+const roleIcon    = { Owner:'🌳', Team:'🌿', Ramp:'🏭', Admin:'⚙️' };
+const roleCardCls = { Owner:'uc-g', Team:'uc-g', Ramp:'uc-b', Admin:'uc-i' };
+const roleAvCls   = { Owner:'av-g', Team:'av-g', Ramp:'av-b', Admin:'av-i' };
+const roleBgCls   = { Owner:'bg-g', Team:'bg-g', Ramp:'bg-b', Admin:'bg-i' };
 
 function _setup(u, g) {
   U = { ...U, ...u };
   userRole = u.role;
 
-  // แสดง user card
   document.getElementById('ucard').className    = 'user-card ' + (roleCardCls[u.role] || 'uc-g');
   document.getElementById('uavatar').className  = 'uc-avatar ' + (roleAvCls[u.role]   || 'av-g');
   document.getElementById('uavatar').textContent = roleIcon[u.role] || '👤';
@@ -238,43 +294,29 @@ function _setup(u, g) {
   document.getElementById('ubadge').textContent = roleLabel[u.role] || u.role;
 
   if (u.role === 'Owner') {
-    // ── เจ้าของสวน ─────────────────────────────────────
     document.getElementById('uname').textContent = u.gardenName;
     document.getElementById('usub').textContent  = `${u.phone} · ${u.gardenId}`;
-
-    // ล็อก dropdown สวน
     const sel = document.getElementById('inp-garden');
     sel.innerHTML = `<option value="${u.gardenId}" selected>${u.gardenName}</option>`;
     sel.classList.add('ro');
     U.gardenId   = u.gardenId;
     U.gardenName = u.gardenName;
-
-    // ดึงข้อมูลสวนจาก gData
     const myGarden = g.gardens.find(x => x.id === u.gardenId);
     if (myGarden) {
-      // ชื่อในบิล
       _fillBills(u.billNames || []);
-
-      // จุดรับ
-      const pk  = myGarden.pickupPoint;
-      const loc = myGarden.location;
+      const pk = myGarden.pickupPoint;
       if (!pk || pk === 'ไม่มี') {
         _fillPickups([U.gardenName || 'สวนหลัก']);
       } else {
         _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
       }
-
-      // RSPO — ดึงจาก myGarden (ไม่ใช่ u)
       _setRspo(myGarden.rspo || 'ไม่มี');
-
-      // ทีมตัด — ดึงจาก myGarden
       _setTeam(myGarden.teamId || '');
     }
 
   } else if (u.role === 'Ramp') {
-    U.gardenId   = u.rampId;    // ← เพิ่ม
-    U.gardenName = u.name;      // ← เพิ่ม
-    // ── ลานเท ───────────────────────────────────────────
+    U.gardenId   = u.rampId;
+    U.gardenName = u.name;
     document.getElementById('uname').textContent = u.name;
     document.getElementById('usub').textContent  = u.phone;
     document.getElementById('h-ramp').classList.remove('hide');
@@ -283,13 +325,174 @@ function _setup(u, g) {
     document.getElementById('lk-detail').classList.remove('hide');
     document.getElementById('inner-detail').classList.add('locked');
 
-  } else {
-    // ── Admin / Team ─────────────────────────────────────
+  } else if (u.role === 'Admin') {
+    // ── Admin ────────────────────────────────────────────
     document.getElementById('uname').textContent = u.name || u.gardenName;
     document.getElementById('usub').textContent  = u.phone;
-    if (u.role === 'Admin') document.getElementById('h-admin').classList.remove('hide');
+    document.getElementById('h-admin').classList.remove('hide');
+    _fillGardens(g.gardens || []);
+
+    // แสดง card มอบหมายคนขับ
+    document.getElementById('card-assign').classList.remove('hide');
+
+    // โหลดข้อมูล Admin เพิ่มเติม
+    _loadAdminData();
+
+  } else {
+    // Team
+    document.getElementById('uname').textContent = u.name || u.gardenName;
+    document.getElementById('usub').textContent  = u.phone;
     _fillGardens(g.gardens || []);
   }
+}
+
+// ── Admin: โหลด pending orders + drivers ─────────────────
+async function _loadAdminData() {
+  try {
+    const [ordRes, drvRes] = await Promise.all([
+      fetch(`${GAS_URL}?action=getPendingOrders`).then(r => r.json()),
+      fetch(`${GAS_URL}?action=getAvailableDrivers`).then(r => r.json())
+    ]);
+
+    // fill pending orders (ไม่มีคนขับรับงาน)
+    _fillPendingOrders(ordRes.orders || []);
+
+    // fill available drivers (สถานะว่าง)
+    _fillDrivers(drvRes.drivers || []);
+
+    // fill ทะเบียนรถทั้งหมด สำหรับ dropdown "ระบุเอง"
+    _fillAllPlates(drvRes.drivers || []);
+
+  } catch(e) {
+    console.error('Admin data load error:', e);
+  }
+}
+
+function _fillPendingOrders(orders) {
+  const sel = document.getElementById('inp-assign-order');
+  // เก็บ option แรก (ออเดอร์ใหม่)
+  sel.innerHTML = '<option value="">-- ออเดอร์ใหม่ (ไม่ผูกกับออเดอร์เดิม) --</option>';
+  orders.forEach(o => {
+    const el = document.createElement('option');
+    el.value = o.orderId;
+    // แสดง: orderId · ชื่อสวน · วันที่ · เวลา
+    el.textContent = `${o.orderId} · ${o.gardenName || o.gardenId} · ${o.date} ${o.time}`;
+    el.dataset.gardenId   = o.gardenId   || '';
+    el.dataset.gardenName = o.gardenName || '';
+    el.dataset.date       = o.date       || '';
+    el.dataset.time       = o.time       || '';
+    sel.appendChild(el);
+  });
+}
+
+function _fillDrivers(drivers) {
+  // เก็บ list ไว้ใช้ใน onDriverChange ด้วย
+  window._driverList = drivers;
+  const sel = document.getElementById('inp-driver');
+  sel.innerHTML = '<option value="">-- เลือกคนขับ --</option>';
+  drivers.forEach(d => {
+    const el = document.createElement('option');
+    el.value = d.uid;
+    el.textContent = `${d.name}`;
+    el.dataset.name  = d.name;
+    el.dataset.phone = d.phone  || '';
+    el.dataset.plate = d.plate  || '';
+    el.dataset.type  = d.type   || '';
+    sel.appendChild(el);
+  });
+}
+
+function _fillAllPlates(drivers) {
+  // รวมทะเบียนทั้งหมดในระบบ ใส่ใน select "ระบุเอง"
+  const sel = document.getElementById('inp-plate-custom');
+  sel.innerHTML = '<option value="">-- เลือกทะเบียน --</option>';
+  const seen = new Set();
+  drivers.forEach(d => {
+    if (!d.plate) return;
+    // driver อาจมีทะเบียนหลายคัน คั่นด้วย comma
+    d.plate.split(',').map(p => p.trim()).filter(Boolean).forEach(plate => {
+      if (seen.has(plate)) return;
+      seen.add(plate);
+      const o = document.createElement('option');
+      o.value = o.textContent = plate;
+      sel.appendChild(o);
+    });
+  });
+}
+
+// เมื่อเลือกออเดอร์ที่มีอยู่ → prefill วันที่ / เวลา
+function onAssignOrderChange() {
+  const sel = document.getElementById('inp-assign-order');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+
+  const date = opt.dataset.date;
+  const time = opt.dataset.time;
+
+  if (date) {
+    document.getElementById('inp-date').value = date;
+    filterTime();
+  }
+  if (time) {
+    // รอ filterTime สร้าง options เสร็จก่อน
+    setTimeout(() => {
+      document.getElementById('inp-time').value = time;
+    }, 50);
+  }
+}
+
+// เมื่อเลือกคนขับ → generate plate chips
+function onDriverChange() {
+  const sel = document.getElementById('inp-driver');
+  const opt = sel.options[sel.selectedIndex];
+  const info = document.getElementById('driver-info');
+  const chipsEl = document.getElementById('plate-chips');
+  const custSel = document.getElementById('inp-plate-custom');
+
+  // ซ่อน select เอง & เคลียร์ chips ก่อน
+  custSel.classList.add('hide');
+  chipsEl.innerHTML = '';
+
+  if (!opt || !opt.value) {
+    info.style.display = 'none';
+    return;
+  }
+
+  // แสดง info: เบอร์โทร + ประเภทรถ
+  const phone = opt.dataset.phone || '—';
+  const type  = opt.dataset.type  || '—';
+  info.textContent = `📞 ${phone} · 🚚 ${type}`;
+  info.style.display = 'block';
+
+  // สร้าง chips ทะเบียนรถของคนขับนี้
+  const plates = (opt.dataset.plate || '').split(',').map(p => p.trim()).filter(Boolean);
+  plates.forEach((plate, i) => {
+    const c = document.createElement('span');
+    c.className = 'chip-admin' + (i === 0 ? ' on' : '');
+    c.textContent = plate;
+    c.onclick = () => pickPlate(c, false);
+    chipsEl.appendChild(c);
+  });
+
+  // เพิ่ม chip "ระบุเอง"
+  const cOther = document.createElement('span');
+  cOther.className = 'chip-admin';
+  cOther.textContent = 'ระบุเอง';
+  cOther.onclick = () => pickPlate(cOther, true);
+  chipsEl.appendChild(cOther);
+
+  // auto-select chip แรกถ้ามีทะเบียน
+  if (plates.length === 0) {
+    cOther.classList.add('on');
+    custSel.classList.remove('hide');
+  }
+}
+
+function pickPlate(el, showCustom) {
+  document.querySelectorAll('#plate-chips .chip-admin').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  const custSel = document.getElementById('inp-plate-custom');
+  custSel.classList.toggle('hide', !showCustom);
 }
 
 // ── Fill Helpers ──────────────────────────────────────────
@@ -341,7 +544,6 @@ function _fillTeams(ts) {
   });
 }
 
-// ── RSPO setter (ล็อกตามดาต้า) ────────────────────────────
 function _setRspo(rspoValue) {
   const chips = document.querySelectorAll('#rspo-container .chip');
   chips.forEach(chip => {
@@ -351,23 +553,17 @@ function _setRspo(rspoValue) {
       rspoValue === 'ไม่มี' && txt === 'ไม่มี';
     chip.classList.toggle('on', isMatch);
   });
-  // ล็อกไม่ให้กด
-  //document.getElementById('rspo-container').style.pointerEvents = 'none';
 }
 
-// ── Team setter (auto-select จากดาต้า) ────────────────────
 function _setTeam(teamId) {
   const chips   = document.querySelectorAll('#team-chips .chip');
   const teamSel = document.getElementById('inp-team');
-
   if (teamId && teamId !== 'ไม่มี') {
-    // สลับชิปไปที่ "มีทีมตัด"
     chips.forEach(c => c.classList.remove('on'));
     chips[1].classList.add('on');
     teamSel.classList.remove('hide');
     teamSel.value = teamId;
   } else {
-    // สลับชิปกลับที่ "ไม่มี"
     chips.forEach(c => c.classList.remove('on'));
     chips[0].classList.add('on');
     teamSel.classList.add('hide');
@@ -378,7 +574,6 @@ function _setTeam(teamId) {
 function onGardenChange() {
   const o   = document.getElementById('inp-garden');
   const opt = o.options[o.selectedIndex];
-
   if (!opt || !opt.value) {
     _fillBills([]);
     _fillPickups([]);
@@ -386,20 +581,15 @@ function onGardenChange() {
     _setTeam('');
     return;
   }
-
   U.gardenId   = opt.value;
   U.gardenName = opt.textContent;
-
   _fillBills(JSON.parse(opt.dataset.bills || '[]'));
-
-  const pk  = opt.dataset.pickup;
-  const loc = opt.dataset.location;
+  const pk = opt.dataset.pickup;
   if (!pk || pk === 'ไม่มี') {
     _fillPickups([opt.textContent || 'สวนหลัก']);
   } else {
     _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
   }
-
   _setRspo(opt.dataset.rspo   || 'ไม่มี');
   _setTeam(opt.dataset.teamId || '');
 }
@@ -409,10 +599,42 @@ function pick(el) {
   el.parentNode.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
   el.classList.add('on');
 }
-
 function pickSel(el, show, id) {
   pick(el);
   document.getElementById(id).classList.toggle('hide', !show);
+}
+function pickAdmin(el, groupId) {
+  document.querySelectorAll(`#${groupId} .chip-admin`).forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// ── ดึงค่าจาก Admin fields ────────────────────────────────
+function _getAdminFields() {
+  if (userRole !== 'Admin') return {};
+
+  const ordSel = document.getElementById('inp-assign-order');
+  const drvSel = document.getElementById('inp-driver');
+
+  // ทะเบียน: chip ที่เลือก หรือ dropdown ระบุเอง
+  const plateChipOn = document.querySelector('#plate-chips .chip-admin.on');
+  let plate = '';
+  if (plateChipOn && plateChipOn.textContent !== 'ระบุเอง') {
+    plate = plateChipOn.textContent.trim();
+  } else {
+    plate = document.getElementById('inp-plate-custom').value;
+  }
+
+  // ประเภทงาน
+  const jobChip = document.querySelector('#jobtype-chips .chip-admin.on');
+  const jobType = jobChip ? jobChip.textContent.trim() : '';
+
+  return {
+    assignOrderId : ordSel.value || '',
+    driverUid     : drvSel.value || '',
+    driverName    : drvSel.options[drvSel.selectedIndex]?.dataset?.name || '',
+    plate,
+    jobType
+  };
 }
 
 // ── Submit ────────────────────────────────────────────────
@@ -428,12 +650,17 @@ async function submitForm() {
   if (!time)   { alert('กรุณาเลือกเวลาครับ');   return; }
   if (!U.gardenId && userRole !== 'Ramp') { alert('กรุณาเลือกสวนครับ'); return; }
 
-  // RSPO value
+  // ตรวจ Admin fields
+  if (userRole === 'Admin') {
+    const af = _getAdminFields();
+    if (!af.driverUid) { alert('กรุณาเลือกคนขับครับ'); return; }
+    if (!af.plate)     { alert('กรุณาระบุทะเบียนรถครับ'); return; }
+  }
+
   const rspoChip = document.querySelector('#rspo-container .chip.on');
   const rspoText = rspoChip ? rspoChip.textContent.trim() : 'ไม่มี';
   const rspo     = (rspoText === 'มี RSPO') ? 'มี' : 'ไม่มี';
 
-  // bin count
   const binChip  = document.querySelector('#bin-chips .chip.on');
   const binCount = !binEl.classList.contains('hide')
     ? parseInt(binEl.value) || 3
@@ -443,6 +670,8 @@ async function submitForm() {
   document.getElementById('btn-sub').disabled = true;
 
   try {
+    const adminFields = _getAdminFields();
+
     const payload = {
       action: 'submitOrder',
       userId: U.userId,
@@ -452,13 +681,18 @@ async function submitForm() {
       time,
       billName: bill,
       pickupPoint: pickup,
-      
-      // ✅ แก้บรรทัดนี้: นำตัวแปร rspo ที่คำนวณไว้ด้านบนมาใส่ได้เลย
-      rspo: rspo, 
-
+      rspo,
       teamId: (!teamEl.classList.contains('hide')) ? teamEl.value : 'ไม่มี',
       binCount,
-      note: document.getElementById('inp-note').value
+      note: document.getElementById('inp-note').value,
+      // ── Admin extra ──
+      ...(userRole === 'Admin' && {
+        assignOrderId : adminFields.assignOrderId,
+        driverUid     : adminFields.driverUid,
+        driverName    : adminFields.driverName,
+        plate         : adminFields.plate,
+        jobType       : adminFields.jobType
+      })
     };
 
     const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -468,7 +702,10 @@ async function submitForm() {
 
     if (r.success) {
       document.getElementById('success-msg').innerHTML =
-        `รับออเดอร์ <b>${r.orderId}</b> แล้วครับ<br>Admin จะยืนยันเร็วๆ นี้`;
+        `รับออเดอร์ <b>${r.orderId}</b> แล้วครับ<br>` +
+        (userRole === 'Admin' && adminFields.driverName
+          ? `มอบหมายให้ <b>${adminFields.driverName}</b> แล้ว`
+          : 'Admin จะยืนยันเร็วๆ นี้');
       document.getElementById('success').classList.add('show');
     } else {
       alert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
