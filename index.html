@@ -126,22 +126,34 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
     </div>
     <div class="prefill-badge hide" id="prefill-badge">📋 ดึงข้อมูลจากออเดอร์เดิมแล้ว — แก้ไขได้ด้านล่าง</div>
 
-    <!-- คนขับ -->
+    <!-- วิธีส่งงาน -->
     <div class="fld">
-      <label>คนขับ (สถานะว่าง) <span class="req">*</span></label>
-      <select class="inp inp-admin" id="inp-driver" onchange="onDriverChange()">
-        <option value="">-- เลือกคนขับ --</option>
-      </select>
-      <div class="driver-info" id="driver-info">—</div>
+      <label>วิธีส่งงาน <span class="req">*</span></label>
+      <div class="chips" id="dispatch-chips">
+        <span class="chip-admin on" onclick="pickDispatch(this,'flex')">📢 Flex งานใหม่</span>
+        <span class="chip-admin" onclick="pickDispatch(this,'assign')">👤 ระบุคนขับ</span>
+      </div>
+      <div style="font-size:10px;color:var(--text-l);margin-top:5px" id="dispatch-hint">
+        broadcast ให้คนขับทุกคนรับงาน
+      </div>
     </div>
 
-    <!-- ทะเบียนรถ -->
-    <div class="fld" style="margin:0">
-      <label>ทะเบียนรถ <span class="req">*</span></label>
-      <div class="chips" id="plate-chips" style="margin-bottom:8px"></div>
-      <select class="inp inp-admin hide" id="inp-plate-custom">
-        <option value="">-- เลือกทะเบียน --</option>
-      </select>
+    <!-- คนขับ (แสดงเฉพาะ mode ระบุคนขับ) -->
+    <div id="driver-section" class="hide">
+      <div class="fld">
+        <label>คนขับ (สถานะว่าง) <span class="req">*</span></label>
+        <select class="inp inp-admin" id="inp-driver" onchange="onDriverChange()">
+          <option value="">-- เลือกคนขับ --</option>
+        </select>
+        <div class="driver-info" id="driver-info">—</div>
+      </div>
+      <div class="fld" style="margin:0">
+        <label>ทะเบียนรถ <span class="req">*</span></label>
+        <div class="chips" id="plate-chips" style="margin-bottom:8px"></div>
+        <select class="inp inp-admin hide" id="inp-plate-custom">
+          <option value="">-- เลือกทะเบียน --</option>
+        </select>
+      </div>
     </div>
   </div>
   <!-- ══ END ADMIN BLOCK ══════════════════════ -->
@@ -642,6 +654,24 @@ function pickPlate(el, showCustom) {
   document.getElementById('inp-plate-custom').classList.toggle('hide', !showCustom);
 }
 
+// ── Dispatch Mode ─────────────────────────────────────────
+let dispatchMode = 'flex'; // 'flex' | 'assign'
+
+function pickDispatch(el, mode) {
+  document.querySelectorAll('#dispatch-chips .chip-admin').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  dispatchMode = mode;
+  const driverSec = document.getElementById('driver-section');
+  const hint = document.getElementById('dispatch-hint');
+  if (mode === 'assign') {
+    driverSec.classList.remove('hide');
+    hint.textContent = 'มอบหมายคนขับโดยตรง';
+  } else {
+    driverSec.classList.add('hide');
+    hint.textContent = 'broadcast ให้คนขับทุกคนรับงาน';
+  }
+}
+
 // ── Goods chips ───────────────────────────────────────────
 function pickGoods(el, val) {
   document.querySelectorAll('#goods-chips .chip').forEach(c => c.classList.remove('on'));
@@ -739,10 +769,11 @@ function _getAdminFields() {
   else plate = document.getElementById('inp-plate-custom').value;
   return {
     assignOrderId : ordSel.value || '',
-    driverUid     : drvSel.value || '',
-    driverName    : drvSel.options[drvSel.selectedIndex]?.dataset?.name || '',
-    plate,
-    jobType       : currentJobType
+    driverUid     : dispatchMode === 'assign' ? (drvSel.value || '') : '',
+    driverName    : dispatchMode === 'assign' ? (drvSel.options[drvSel.selectedIndex]?.dataset?.name || '') : '',
+    plate         : dispatchMode === 'assign' ? plate : '',
+    jobType       : currentJobType,
+    dispatchMode  : dispatchMode  // 'flex' | 'assign'
   };
 }
 
@@ -754,8 +785,10 @@ async function submitForm() {
   // ── Validate Admin fields ──
   if (isAdmin) {
     const af = _getAdminFields();
-    if (!af.driverUid) { alert('กรุณาเลือกคนขับครับ'); return; }
-    if (!af.plate)     { alert('กรุณาระบุทะเบียนรถครับ'); return; }
+    if (af.dispatchMode === 'assign') {
+      if (!af.driverUid) { alert('กรุณาเลือกคนขับครับ'); return; }
+      if (!af.plate)     { alert('กรุณาระบุทะเบียนรถครับ'); return; }
+    }
   }
 
   let payload = {};
@@ -848,9 +881,15 @@ async function submitForm() {
     document.getElementById('overlay').classList.remove('show');
     if (r.success) {
       const af = isAdmin ? _getAdminFields() : {};
-      document.getElementById('success-msg').innerHTML =
-        `รับออเดอร์ <b>${r.orderId}</b> แล้วครับ<br>` +
-        (isAdmin && af.driverName ? `มอบหมายให้ <b>${af.driverName}</b> แล้ว` : 'Admin จะยืนยันเร็วๆ นี้');
+      let successMsg = `รับออเดอร์ <b>${r.orderId}</b> แล้วครับ<br>`;
+      if (isAdmin && af.dispatchMode === 'assign' && af.driverName) {
+        successMsg += `มอบหมายให้ <b>${af.driverName}</b> แล้ว`;
+      } else if (isAdmin && af.dispatchMode === 'flex') {
+        successMsg += `📢 Broadcast หาคนขับแล้วครับ`;
+      } else {
+        successMsg += `Admin จะยืนยันเร็วๆ นี้`;
+      }
+      document.getElementById('success-msg').innerHTML = successMsg;
       document.getElementById('success').classList.add('show');
     } else {
       alert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
