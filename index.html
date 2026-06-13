@@ -92,7 +92,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 </div>
 
 <div class="body">
-  <!-- User Card -->
   <div class="user-card uc-g" id="ucard">
     <div class="uc-avatar av-g" id="uavatar">🌳</div>
     <div><div class="uc-name" id="uname">กำลังโหลด...</div><div class="uc-sub" id="usub">—</div></div>
@@ -101,14 +100,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
   <div class="hint hw hide" id="h-ramp">🔒 ลานเท: กรอกได้เฉพาะ วันที่ · เวลา · กระบะ · หมายเหตุ</div>
   <div class="hint hi hide" id="h-admin">⚙️ Admin: สร้างออเดอร์หรือมอบหมายคนขับให้ออเดอร์เดิม</div>
 
-  <!-- ══════════════════════════════════════════
-       ADMIN ONLY BLOCK (บนสุด)
-  ══════════════════════════════════════════ -->
   <div class="card-admin hide" id="card-assign">
     <span class="admin-badge">⚙️ เฉพาะ Admin</span>
     <div class="stitle-admin" style="margin-top:4px">🚗 จัดการออเดอร์</div>
 
-    <!-- ประเภทงาน -->
     <div class="fld">
       <label>ประเภทงาน <span class="req">*</span></label>
       <div class="chips" id="jobtype-chips">
@@ -117,7 +112,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
 
-    <!-- ดึงออเดอร์เดิม หรือ สร้างใหม่ -->
     <div class="fld">
       <label>ออเดอร์</label>
       <select class="inp inp-admin" id="inp-assign-order" onchange="onAssignOrderChange()">
@@ -126,7 +120,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
     </div>
     <div class="prefill-badge hide" id="prefill-badge">📋 ดึงข้อมูลจากออเดอร์เดิมแล้ว — แก้ไขได้ด้านล่าง</div>
 
-    <!-- วิธีส่งงาน -->
     <div class="fld">
       <label>วิธีส่งงาน <span class="req">*</span></label>
       <div class="chips" id="dispatch-chips">
@@ -138,7 +131,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
 
-    <!-- คนขับ (แสดงเฉพาะ mode ระบุคนขับ) -->
     <div id="driver-section" class="hide">
       <div class="fld">
         <label>คนขับ (สถานะว่าง) <span class="req">*</span></label>
@@ -156,13 +148,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
   </div>
-  <!-- ══ END ADMIN BLOCK ══════════════════════ -->
 
-  <!-- ═══════════════════════════════════════════
-       FORM: ปาล์ม (default)
-  ════════════════════════════════════════════ -->
   <div id="form-palm">
-    <!-- วันและเวลา -->
     <div class="card">
       <div class="stitle">📅 วันและเวลา</div>
       <div class="row2">
@@ -174,7 +161,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
 
-    <!-- บิล/จุดรับ -->
     <div class="card" id="card-bill">
       <span class="lkbadge hide" id="lk-bill">🔒 ล็อก</span>
       <div id="inner-bill">
@@ -193,7 +179,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
 
-    <!-- รายละเอียด -->
     <div class="card" id="card-detail">
       <span class="lkbadge hide" id="lk-detail">🔒 ล็อก</span>
       <div id="inner-detail">
@@ -214,7 +199,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
 
-    <!-- กระบะ -->
     <div class="card">
       <div class="stitle">🧺 กระบะ + หมายเหตุ</div>
       <div class="fld"><label>จำนวนกระบะ <span class="req">*</span></label>
@@ -233,13 +217,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
   </div>
-  <!-- ══ END FORM PALM ══════════════════════ -->
 
-  <!-- ═══════════════════════════════════════════
-       FORM: อื่นๆ (Admin เท่านั้น)
-  ════════════════════════════════════════════ -->
   <div id="form-other" class="hide">
-    <!-- วันและเวลา -->
     <div class="card">
       <div class="stitle">📅 วันและเวลา</div>
       <div class="row2">
@@ -251,7 +230,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
 
-    <!-- สินค้า -->
     <div class="card">
       <div class="stitle">📦 รายการสินค้า</div>
       <div class="fld">
@@ -278,7 +256,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
 
-    <!-- สถานที่ส่ง / จุดรับ -->
     <div class="card">
       <div class="stitle">📍 สถานที่</div>
       <div class="fld"><label>สถานที่ส่ง <span class="req">*</span></label>
@@ -293,7 +270,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
 
-    <!-- หมายเหตุ -->
     <div class="card">
       <div class="stitle">📝 หมายเหตุ</div>
       <div class="fld" style="margin:0">
@@ -301,7 +277,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
   </div>
-  <!-- ══ END FORM OTHER ══════════════════════ -->
 
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:13px;color:var(--text-m)">สถานะเริ่มต้น</span>
@@ -316,7 +291,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec';
 const LIFF_ID = '2010274217-BF41B8c2';
 let U = {}, gData = {}, userRole = '';
-let currentJobType = 'ปาล์ม'; // ค่าเริ่มต้น
+let currentJobType = 'ปาล์ม';
 
 // ── Filter Time ───────────────────────────────────────────
 function filterTime(dateId, timeId) {
@@ -356,7 +331,6 @@ async function init() {
     filterTime('inp-date', 'inp-time');
     filterTime('inp-date-o', 'inp-time-o');
 
-    // unit onChange
     document.getElementById('inp-unit').addEventListener('change', function() {
       document.getElementById('inp-unit-other').classList.toggle('hide', this.value !== '__other__');
     });
@@ -375,7 +349,7 @@ async function init() {
   }
 }
 
-// ── Setup UI ตาม Role ─────────────────────────────────────
+// ── Setup UI ──────────────────────────────────────────────
 const roleLabel   = { Owner:'เจ้าของสวน', Team:'ทีมตัด', Ramp:'ลานเท', Driver:'คนขับ', Admin:'Admin' };
 const roleIcon    = { Owner:'🌳', Team:'🌿', Ramp:'🏭', Admin:'⚙️' };
 const roleCardCls = { Owner:'uc-g', Team:'uc-g', Ramp:'uc-b', Admin:'uc-i' };
@@ -440,10 +414,11 @@ async function _loadAdminData(g) {
       fetch(`${GAS_URL}?action=getPendingOrders`).then(r => r.json()),
       fetch(`${GAS_URL}?action=getAvailableDrivers`).then(r => r.json())
     ]);
+    // ✅ เก็บ ramp UIDs ไว้เช็คตอน onAssignOrderChange
+    window._rampUids = (g.ramps || []).map(r => r.uid).filter(Boolean);
     _fillPendingOrders(ordRes.orders || []);
     _fillDrivers(drvRes.drivers || []);
     _fillAllPlates(drvRes.drivers || []);
-    // fill สถานที่ส่ง (Garden + Ramp)
     _fillDestinations(g);
   } catch(e) { console.error('Admin data load error:', e); }
 }
@@ -451,7 +426,6 @@ async function _loadAdminData(g) {
 function _fillDestinations(g) {
   const sel = document.getElementById('inp-dest');
   sel.innerHTML = '<option value="">-- เลือกสถานที่ส่ง --</option>';
-  // Gardens
   const optgGroup = document.createElement('optgroup');
   optgGroup.label = '🌳 สวน';
   (g.gardens || []).forEach(garden => {
@@ -461,7 +435,6 @@ function _fillDestinations(g) {
     optgGroup.appendChild(o);
   });
   sel.appendChild(optgGroup);
-  // Ramps
   const optRGroup = document.createElement('optgroup');
   optRGroup.label = '🏭 ลานเท';
   (g.ramps || []).forEach(ramp => {
@@ -481,13 +454,11 @@ function onDestChange() {
   const pickupSel = document.getElementById('inp-pickup-o');
   pickupSel.innerHTML = '<option value="">-- เลือกจุดรับ --</option>';
   if (data.type === 'ramp') {
-    // ลานเท → จุดรับ = ชื่อลานเทเลย
     const o = document.createElement('option');
     o.value = o.textContent = data.name;
     pickupSel.appendChild(o);
     pickupSel.selectedIndex = 1;
   } else {
-    // Garden → ดึงจุดรับจากสวน
     const pk = data.pickup;
     if (!pk || pk === 'ไม่มี') {
       const o = document.createElement('option');
@@ -505,7 +476,7 @@ function onDestChange() {
   }
 }
 
-// ── Job Type Switch ────────────────────────────────────────
+// ── Job Type Switch ───────────────────────────────────────
 function pickJobType(el, type) {
   document.querySelectorAll('#jobtype-chips .chip-admin').forEach(c => c.classList.remove('on'));
   el.classList.add('on');
@@ -517,11 +488,10 @@ function pickJobType(el, type) {
     document.getElementById('form-palm').classList.add('hide');
     document.getElementById('form-other').classList.remove('hide');
   }
-  // ถ้าเปลี่ยน jobtype ให้ clear prefill
   if (document.getElementById('inp-assign-order').value) {
     document.getElementById('inp-assign-order').value = '';
     document.getElementById('prefill-badge').classList.add('hide');
-    _clearPrefill();
+    _unlockOrderForm();
   }
 }
 
@@ -539,6 +509,10 @@ function _fillPendingOrders(orders) {
     el.dataset.time       = o.time       || '';
     el.dataset.pickup     = o.pickup     || '';
     el.dataset.billName   = o.billName   || '';
+    // ✅ เพิ่ม
+    el.dataset.ownerUid  = o.ownerUid   || '';
+    el.dataset.binCount  = o.binCount   || 1;
+    el.dataset.note      = o.note       || '';
     sel.appendChild(el);
   });
 }
@@ -546,13 +520,17 @@ function _fillPendingOrders(orders) {
 function onAssignOrderChange() {
   const sel = document.getElementById('inp-assign-order');
   const opt = sel.options[sel.selectedIndex];
+
   if (!opt || !opt.value) {
     document.getElementById('prefill-badge').classList.add('hide');
-    _clearPrefill();
+    _unlockOrderForm();
     return;
   }
-  // Prefill ข้อมูลจากออเดอร์เดิม
+
   document.getElementById('prefill-badge').classList.remove('hide');
+
+  const ownerUid  = opt.dataset.ownerUid || '';
+  const isRampOrd = window._rampUids && window._rampUids.includes(ownerUid);
 
   if (currentJobType === 'ปาล์ม') {
     // วันที่/เวลา
@@ -561,31 +539,67 @@ function onAssignOrderChange() {
       filterTime('inp-date', 'inp-time');
       setTimeout(() => { document.getElementById('inp-time').value = opt.dataset.time; }, 50);
     }
-    // สวน
-    if (opt.dataset.gardenId) {
-      const gardenSel = document.getElementById('inp-garden');
-      gardenSel.value = opt.dataset.gardenId;
+
+    if (isRampOrd) {
+      // ออเดอร์จากลานเท → ล็อก bill + detail
+      document.getElementById('lk-bill').classList.remove('hide');
+      document.getElementById('inner-bill').classList.add('locked');
+      document.getElementById('lk-detail').classList.remove('hide');
+      document.getElementById('inner-detail').classList.add('locked');
       U.gardenId   = opt.dataset.gardenId;
       U.gardenName = opt.dataset.gardenName;
-      onGardenChange();
-      // จุดรับ
-      setTimeout(() => {
-        const pkSel = document.getElementById('inp-pickup');
-        for (let i = 0; i < pkSel.options.length; i++) {
-          if (pkSel.options[i].value === opt.dataset.pickup) { pkSel.selectedIndex = i; break; }
-        }
-        // ชื่อในบิล
-        const billSel = document.getElementById('inp-bill');
-        for (let i = 0; i < billSel.options.length; i++) {
-          if (billSel.options[i].value === opt.dataset.billName) { billSel.selectedIndex = i; break; }
-        }
-      }, 100);
+    } else {
+      // ออเดอร์ปกติ → prefill สวน/จุดรับ/บิล
+      _unlockOrderForm();
+      if (opt.dataset.gardenId) {
+        const gardenSel = document.getElementById('inp-garden');
+        gardenSel.value = opt.dataset.gardenId;
+        U.gardenId   = opt.dataset.gardenId;
+        U.gardenName = opt.dataset.gardenName;
+        onGardenChange();
+        setTimeout(() => {
+          const pkSel = document.getElementById('inp-pickup');
+          for (let i = 0; i < pkSel.options.length; i++) {
+            if (pkSel.options[i].value === opt.dataset.pickup) { pkSel.selectedIndex = i; break; }
+          }
+          const billSel = document.getElementById('inp-bill');
+          for (let i = 0; i < billSel.options.length; i++) {
+            if (billSel.options[i].value === opt.dataset.billName) { billSel.selectedIndex = i; break; }
+          }
+        }, 100);
+      }
     }
+
+    // กระบะ
+    _prefillBinCount(parseInt(opt.dataset.binCount) || 1);
+
+    // หมายเหตุ
+    if (opt.dataset.note) document.getElementById('inp-note').value = opt.dataset.note;
   }
 }
 
-function _clearPrefill() {
-  // clear วันที่/เวลา ไม่ทำ เพราะผู้ใช้อาจกรอกเองแล้ว
+// ── Helper: prefill กระบะ ─────────────────────────────────
+function _prefillBinCount(count) {
+  const chips  = document.querySelectorAll('#bin-chips .chip');
+  const binSel = document.getElementById('inp-bin');
+  if (count === 1 || count === 2) {
+    chips.forEach(c => c.classList.remove('on'));
+    chips[count - 1].classList.add('on');
+    binSel.classList.add('hide');
+  } else {
+    chips.forEach(c => c.classList.remove('on'));
+    chips[2].classList.add('on');
+    binSel.classList.remove('hide');
+    binSel.value = String(count);
+  }
+}
+
+// ── Helper: unlock form ───────────────────────────────────
+function _unlockOrderForm() {
+  document.getElementById('lk-bill').classList.add('hide');
+  document.getElementById('inner-bill').classList.remove('locked');
+  document.getElementById('lk-detail').classList.add('hide');
+  document.getElementById('inner-detail').classList.remove('locked');
 }
 
 // ── Drivers ───────────────────────────────────────────────
@@ -655,7 +669,7 @@ function pickPlate(el, showCustom) {
 }
 
 // ── Dispatch Mode ─────────────────────────────────────────
-let dispatchMode = 'flex'; // 'flex' | 'assign'
+let dispatchMode = 'flex';
 
 function pickDispatch(el, mode) {
   document.querySelectorAll('#dispatch-chips .chip-admin').forEach(c => c.classList.remove('on'));
@@ -773,7 +787,7 @@ function _getAdminFields() {
     driverName    : dispatchMode === 'assign' ? (drvSel.options[drvSel.selectedIndex]?.dataset?.name || '') : '',
     plate         : dispatchMode === 'assign' ? plate : '',
     jobType       : currentJobType,
-    dispatchMode  : dispatchMode  // 'flex' | 'assign'
+    dispatchMode  : dispatchMode
   };
 }
 
@@ -782,7 +796,6 @@ async function submitForm() {
   const isPalm  = currentJobType === 'ปาล์ม';
   const isAdmin = userRole === 'Admin';
 
-  // ── Validate Admin fields ──
   if (isAdmin) {
     const af = _getAdminFields();
     if (af.dispatchMode === 'assign') {
@@ -794,7 +807,6 @@ async function submitForm() {
   let payload = {};
 
   if (isPalm) {
-    // ── ปาล์ม ──
     const date   = document.getElementById('inp-date').value;
     const time   = document.getElementById('inp-time').value;
     const bill   = document.getElementById('inp-bill').value;
@@ -823,9 +835,8 @@ async function submitForm() {
     };
 
   } else {
-    // ── อื่นๆ ──
-    const date   = document.getElementById('inp-date-o').value;
-    const time   = document.getElementById('inp-time-o').value;
+    const date    = document.getElementById('inp-date-o').value;
+    const time    = document.getElementById('inp-time-o').value;
     const destSel = document.getElementById('inp-dest');
     const destOpt = destSel.options[destSel.selectedIndex];
     const pickup  = document.getElementById('inp-pickup-o').value;
@@ -833,7 +844,6 @@ async function submitForm() {
     const unitVal = document.getElementById('inp-unit').value;
     const unit    = unitVal === '__other__' ? document.getElementById('inp-unit-other').value : unitVal;
 
-    // ประเภทสินค้า
     const goodsChip = document.querySelector('#goods-chips .chip.on');
     let goodsType = goodsChip?.textContent.replace(/[🌱🪚⛏️📦]/g,'').trim() || '';
     if (goodsType === 'อื่นๆ') goodsType = document.getElementById('inp-goods-other').value.trim();
@@ -853,22 +863,20 @@ async function submitForm() {
     payload = {
       action: 'submitOrder', userId: U.userId,
       gardenId: destData.id, gardenName: destData.name,
-      date, time,
-      billName: destData.name, pickupPoint: pickup,
+      date, time, billName: destData.name, pickupPoint: pickup,
       rspo: 'ไม่มี', teamId: 'ไม่มี', binCount: 1,
-      note, jobType: 'อื่นๆ',
-      goodsType, qty, unit
+      note, jobType: 'อื่นๆ', goodsType, qty, unit
     };
   }
 
-  // Admin extra fields
   if (isAdmin) {
     const af = _getAdminFields();
     Object.assign(payload, {
       assignOrderId : af.assignOrderId,
       driverUid     : af.driverUid,
       driverName    : af.driverName,
-      plate         : af.plate
+      plate         : af.plate,
+      dispatchMode  : af.dispatchMode
     });
   }
 
