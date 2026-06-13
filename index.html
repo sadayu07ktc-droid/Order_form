@@ -36,7 +36,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .hw{background:#EFE9DC;border-left:3px solid var(--brown-l);color:var(--brown)}
 .hi{background:var(--green-pale);border-left:3px solid var(--green);color:var(--green-d)}
 .card{background:var(--cream3);border:.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;position:relative}
-/* card พิเศษสำหรับ Admin: ขอบสีน้ำเงิน */
 .card-admin{background:var(--indigo-l);border:.5px solid rgba(79,70,229,.3);border-radius:12px;padding:14px;margin-bottom:12px;position:relative}
 .stitle{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--brown);display:flex;align-items:center;gap:6px;margin-bottom:12px}
 .stitle-admin{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--indigo);display:flex;align-items:center;gap:6px;margin-bottom:12px}
@@ -45,7 +44,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .req{color:var(--red)}
 .inp{width:100%;font-size:14px;font-family:'Sarabun',sans-serif;background:var(--cream);border:.5px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none}
 .inp:focus{border-color:var(--green)}
-.inp.ro{background:var(--cream2);color:var(--text-m)}
+.inp.ro{background:var(--cream2);color:var(--text-m);pointer-events:none}
 .inp-admin{background:#fff;border:.5px solid rgba(79,70,229,.3)}
 .inp-admin:focus{border-color:var(--indigo)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -74,8 +73,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 #success p{font-size:14px;color:var(--text-m);line-height:1.8}
 .btn-close{margin-top:10px;padding:12px 32px;border-radius:999px;background:var(--green);color:#fff;font-size:15px;font-family:'Sarabun',sans-serif;border:none;cursor:pointer}
 .hide{display:none}
-/* driver info chip */
 .driver-info{font-size:11px;color:var(--text-m);padding:6px 10px;background:rgba(79,70,229,.06);border-radius:8px;margin-top:6px;display:none}
+.prefill-badge{font-size:10px;background:#FEF3C7;color:#92400E;border:.5px solid #FDE68A;border-radius:6px;padding:3px 8px;margin-bottom:10px;display:inline-block}
 </style>
 </head>
 <body>
@@ -83,7 +82,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 <div id="success">
   <div class="si">✅</div>
   <h2>ส่งคำขอสำเร็จ!</h2>
-  <p id="success-msg">ระบบได้รับออเดอร์แล้วครับ<br>Admin จะยืนยันเร็วๆ นี้</p>
+  <p id="success-msg">ระบบได้รับออเดอร์แล้วครับ</p>
   <button class="btn-close" onclick="liff.closeWindow()">ปิดหน้าต่าง</button>
 </div>
 
@@ -93,98 +92,41 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 </div>
 
 <div class="body">
+  <!-- User Card -->
   <div class="user-card uc-g" id="ucard">
     <div class="uc-avatar av-g" id="uavatar">🌳</div>
     <div><div class="uc-name" id="uname">กำลังโหลด...</div><div class="uc-sub" id="usub">—</div></div>
     <span class="uc-badge bg-g" id="ubadge">—</span>
   </div>
   <div class="hint hw hide" id="h-ramp">🔒 ลานเท: กรอกได้เฉพาะ วันที่ · เวลา · กระบะ · หมายเหตุ</div>
-  <div class="hint hi hide" id="h-admin">⚙️ Admin: เลือกสวนได้จาก dropdown</div>
+  <div class="hint hi hide" id="h-admin">⚙️ Admin: สร้างออเดอร์หรือมอบหมายคนขับให้ออเดอร์เดิม</div>
 
-  <div class="card">
-    <div class="stitle">📅 วันและเวลา</div>
-    <div class="row2">
-      <div class="fld" style="margin:0"><label>วันที่ <span class="req">*</span></label><input class="inp" type="date" id="inp-date" placeholder="เลือกวันที่"></div>
-      <div class="fld" style="margin:0"><label>เวลา <span class="req">*</span></label>
-        <select class="inp" id="inp-time">
-          <option value="">-- เลือก --</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" id="card-bill">
-    <span class="lkbadge hide" id="lk-bill">🔒 ล็อก</span>
-    <div id="inner-bill">
-      <div class="stitle">📄 บิล / จุดรับ</div>
-      <div class="fld"><label>ชื่อสวน / เจ้าของ</label>
-        <select class="inp" id="inp-garden" onchange="onGardenChange()">
-          <option value="">-- เลือกสวน --</option>
-        </select>
-      </div>
-      <div class="fld"><label>ชื่อในบิล <span class="req">*</span></label>
-        <select class="inp" id="inp-bill"><option value="">-- เลือกชื่อ --</option></select>
-      </div>
-      <div class="fld" style="margin:0"><label>จุดรับ <span class="req">*</span></label>
-        <select class="inp" id="inp-pickup"><option value="">-- เลือกจุดรับ --</option></select>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" id="card-detail">
-    <span class="lkbadge hide" id="lk-detail">🔒 ล็อก</span>
-    <div id="inner-detail">
-      <div class="stitle">🚛 รายละเอียดงาน</div>
-      <div class="fld"><label>มาตรฐาน RSPO</label>
-        <div class="chips" id="rspo-container">
-          <span class="chip on" onclick="pick(this)">ไม่มี</span>
-          <span class="chip" onclick="pick(this)">มี RSPO</span>
-        </div>
-      </div>
-      <div class="fld"><label>ทีมตัด</label>
-        <div class="chips" id="team-chips">
-          <span class="chip on" onclick="pickSel(this,false,'inp-team')">ไม่มี</span>
-          <span class="chip" onclick="pickSel(this,true,'inp-team')">มีทีมตัด</span>
-        </div>
-        <select class="inp hide" id="inp-team" style="margin-top:8px"><option value="">-- เลือกทีม --</option></select>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="stitle">🧺 กระบะ + หมายเหตุ</div>
-    <div class="fld"><label>จำนวนกระบะ <span class="req">*</span></label>
-      <div class="chips" id="bin-chips">
-        <span class="chip on" onclick="pickSel(this,false,'inp-bin')">1</span>
-        <span class="chip" onclick="pickSel(this,false,'inp-bin')">2</span>
-        <span class="chip" onclick="pickSel(this,true,'inp-bin')">ระบุ</span>
-      </div>
-      <select class="inp hide" id="inp-bin" style="margin-top:8px">
-        <option>3</option><option>4</option><option>5</option><option>6</option>
-        <option>7</option><option>8</option><option>9</option><option>10</option>
-      </select>
-    </div>
-    <div class="fld" style="margin:0"><label>หมายเหตุ</label>
-      <textarea class="inp" id="inp-note" rows="2" placeholder="เส้นทาง, จุดนัดพบ..."></textarea>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════
-       ADMIN ONLY: มอบหมายคนขับ
-  ═══════════════════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════════
+       ADMIN ONLY BLOCK (บนสุด)
+  ══════════════════════════════════════════ -->
   <div class="card-admin hide" id="card-assign">
     <span class="admin-badge">⚙️ เฉพาะ Admin</span>
-    <div class="stitle-admin" style="margin-top:4px">🚗 มอบหมายคนขับ</div>
+    <div class="stitle-admin" style="margin-top:4px">🚗 จัดการออเดอร์</div>
 
-    <!-- 1) ออเดอร์ที่ยังไม่มีคนขับ -->
+    <!-- ประเภทงาน -->
     <div class="fld">
-      <label>ออเดอร์ที่ยังไม่มีคนขับรับงาน</label>
-      <select class="inp inp-admin" id="inp-assign-order" onchange="onAssignOrderChange()">
-        <option value="">-- ออเดอร์ใหม่ (ไม่ผูกกับออเดอร์เดิม) --</option>
-      </select>
+      <label>ประเภทงาน <span class="req">*</span></label>
+      <div class="chips" id="jobtype-chips">
+        <span class="chip-admin on" onclick="pickJobType(this,'ปาล์ม')">🌴 ปาล์ม</span>
+        <span class="chip-admin" onclick="pickJobType(this,'อื่นๆ')">📦 อื่นๆ</span>
+      </div>
     </div>
 
-    <!-- 2) คนขับที่ว่าง -->
+    <!-- ดึงออเดอร์เดิม หรือ สร้างใหม่ -->
+    <div class="fld">
+      <label>ออเดอร์</label>
+      <select class="inp inp-admin" id="inp-assign-order" onchange="onAssignOrderChange()">
+        <option value="">-- สร้างออเดอร์ใหม่ --</option>
+      </select>
+    </div>
+    <div class="prefill-badge hide" id="prefill-badge">📋 ดึงข้อมูลจากออเดอร์เดิมแล้ว — แก้ไขได้ด้านล่าง</div>
+
+    <!-- คนขับ -->
     <div class="fld">
       <label>คนขับ (สถานะว่าง) <span class="req">*</span></label>
       <select class="inp inp-admin" id="inp-driver" onchange="onDriverChange()">
@@ -193,28 +135,161 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       <div class="driver-info" id="driver-info">—</div>
     </div>
 
-    <!-- 3) ทะเบียนรถ -->
-    <div class="fld">
+    <!-- ทะเบียนรถ -->
+    <div class="fld" style="margin:0">
       <label>ทะเบียนรถ <span class="req">*</span></label>
-      <div class="chips" id="plate-chips" style="margin-bottom:8px">
-        <!-- chips จะ generate จาก JS -->
-      </div>
-      <select class="inp inp-admin hide" id="inp-plate-custom" style="margin-top:0">
+      <div class="chips" id="plate-chips" style="margin-bottom:8px"></div>
+      <select class="inp inp-admin hide" id="inp-plate-custom">
         <option value="">-- เลือกทะเบียน --</option>
       </select>
     </div>
+  </div>
+  <!-- ══ END ADMIN BLOCK ══════════════════════ -->
 
-    <!-- 4) ประเภทงาน -->
-    <div class="fld" style="margin:0">
-      <label>ประเภทงาน</label>
-      <div class="chips" id="jobtype-chips">
-        <span class="chip-admin on" onclick="pickAdmin(this,'jobtype-chips')">ปาล์ม</span>
-        <span class="chip-admin" onclick="pickAdmin(this,'jobtype-chips')">ยาง</span>
-        <span class="chip-admin" onclick="pickAdmin(this,'jobtype-chips')">อื่นๆ</span>
+  <!-- ═══════════════════════════════════════════
+       FORM: ปาล์ม (default)
+  ════════════════════════════════════════════ -->
+  <div id="form-palm">
+    <!-- วันและเวลา -->
+    <div class="card">
+      <div class="stitle">📅 วันและเวลา</div>
+      <div class="row2">
+        <div class="fld" style="margin:0"><label>วันที่ <span class="req">*</span></label>
+          <input class="inp" type="date" id="inp-date"></div>
+        <div class="fld" style="margin:0"><label>เวลา <span class="req">*</span></label>
+          <select class="inp" id="inp-time"><option value="">-- เลือก --</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- บิล/จุดรับ -->
+    <div class="card" id="card-bill">
+      <span class="lkbadge hide" id="lk-bill">🔒 ล็อก</span>
+      <div id="inner-bill">
+        <div class="stitle">📄 บิล / จุดรับ</div>
+        <div class="fld"><label>ชื่อสวน / เจ้าของ</label>
+          <select class="inp" id="inp-garden" onchange="onGardenChange()">
+            <option value="">-- เลือกสวน --</option>
+          </select>
+        </div>
+        <div class="fld"><label>ชื่อในบิล <span class="req">*</span></label>
+          <select class="inp" id="inp-bill"><option value="">-- เลือกชื่อ --</option></select>
+        </div>
+        <div class="fld" style="margin:0"><label>จุดรับ <span class="req">*</span></label>
+          <select class="inp" id="inp-pickup"><option value="">-- เลือกจุดรับ --</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- รายละเอียด -->
+    <div class="card" id="card-detail">
+      <span class="lkbadge hide" id="lk-detail">🔒 ล็อก</span>
+      <div id="inner-detail">
+        <div class="stitle">🚛 รายละเอียดงาน</div>
+        <div class="fld"><label>มาตรฐาน RSPO</label>
+          <div class="chips" id="rspo-container">
+            <span class="chip on" onclick="pick(this)">ไม่มี</span>
+            <span class="chip" onclick="pick(this)">มี RSPO</span>
+          </div>
+        </div>
+        <div class="fld"><label>ทีมตัด</label>
+          <div class="chips" id="team-chips">
+            <span class="chip on" onclick="pickSel(this,false,'inp-team')">ไม่มี</span>
+            <span class="chip" onclick="pickSel(this,true,'inp-team')">มีทีมตัด</span>
+          </div>
+          <select class="inp hide" id="inp-team" style="margin-top:8px"><option value="">-- เลือกทีม --</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- กระบะ -->
+    <div class="card">
+      <div class="stitle">🧺 กระบะ + หมายเหตุ</div>
+      <div class="fld"><label>จำนวนกระบะ <span class="req">*</span></label>
+        <div class="chips" id="bin-chips">
+          <span class="chip on" onclick="pickSel(this,false,'inp-bin')">1</span>
+          <span class="chip" onclick="pickSel(this,false,'inp-bin')">2</span>
+          <span class="chip" onclick="pickSel(this,true,'inp-bin')">ระบุ</span>
+        </div>
+        <select class="inp hide" id="inp-bin" style="margin-top:8px">
+          <option>3</option><option>4</option><option>5</option><option>6</option>
+          <option>7</option><option>8</option><option>9</option><option>10</option>
+        </select>
+      </div>
+      <div class="fld" style="margin:0"><label>หมายเหตุ</label>
+        <textarea class="inp" id="inp-note" rows="2" placeholder="เส้นทาง, จุดนัดพบ..."></textarea>
       </div>
     </div>
   </div>
-  <!-- ══ END ADMIN CARD ═══════════════════════════════════ -->
+  <!-- ══ END FORM PALM ══════════════════════ -->
+
+  <!-- ═══════════════════════════════════════════
+       FORM: อื่นๆ (Admin เท่านั้น)
+  ════════════════════════════════════════════ -->
+  <div id="form-other" class="hide">
+    <!-- วันและเวลา -->
+    <div class="card">
+      <div class="stitle">📅 วันและเวลา</div>
+      <div class="row2">
+        <div class="fld" style="margin:0"><label>วันที่ <span class="req">*</span></label>
+          <input class="inp" type="date" id="inp-date-o"></div>
+        <div class="fld" style="margin:0"><label>เวลา <span class="req">*</span></label>
+          <select class="inp" id="inp-time-o"><option value="">-- เลือก --</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- สินค้า -->
+    <div class="card">
+      <div class="stitle">📦 รายการสินค้า</div>
+      <div class="fld">
+        <label>ประเภทสินค้า <span class="req">*</span></label>
+        <div class="chips" id="goods-chips">
+          <span class="chip" onclick="pickGoods(this,'ปุ๋ย')">🌱 ปุ๋ย</span>
+          <span class="chip" onclick="pickGoods(this,'เคียว')">🪚 เคียว</span>
+          <span class="chip" onclick="pickGoods(this,'เสียม')">⛏️ เสียม</span>
+          <span class="chip" onclick="pickGoods(this,'อื่นๆ')">📦 อื่นๆ</span>
+        </div>
+        <input class="inp hide" id="inp-goods-other" style="margin-top:8px" placeholder="ระบุรายการสินค้า...">
+      </div>
+      <div class="fld" style="margin:0">
+        <label>จำนวน <span class="req">*</span></label>
+        <div class="row2">
+          <input class="inp" type="number" id="inp-qty" placeholder="0" min="1">
+          <select class="inp" id="inp-unit">
+            <option value="">-- หน่วย --</option>
+            <option>ตัน</option><option>กระสอบ</option><option>ชิ้น</option><option>อัน</option>
+            <option value="__other__">ระบุเอง</option>
+          </select>
+        </div>
+        <input class="inp hide" id="inp-unit-other" style="margin-top:8px" placeholder="ระบุหน่วย...">
+      </div>
+    </div>
+
+    <!-- สถานที่ส่ง / จุดรับ -->
+    <div class="card">
+      <div class="stitle">📍 สถานที่</div>
+      <div class="fld"><label>สถานที่ส่ง <span class="req">*</span></label>
+        <select class="inp" id="inp-dest" onchange="onDestChange()">
+          <option value="">-- เลือกสถานที่ส่ง --</option>
+        </select>
+      </div>
+      <div class="fld" style="margin:0"><label>จุดรับ <span class="req">*</span></label>
+        <select class="inp" id="inp-pickup-o">
+          <option value="">-- เลือกจุดรับ --</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- หมายเหตุ -->
+    <div class="card">
+      <div class="stitle">📝 หมายเหตุ</div>
+      <div class="fld" style="margin:0">
+        <textarea class="inp" id="inp-note-o" rows="2" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
+      </div>
+    </div>
+  </div>
+  <!-- ══ END FORM OTHER ══════════════════════ -->
 
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:13px;color:var(--text-m)">สถานะเริ่มต้น</span>
@@ -229,15 +304,16 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec';
 const LIFF_ID = '2010274217-BF41B8c2';
 let U = {}, gData = {}, userRole = '';
+let currentJobType = 'ปาล์ม'; // ค่าเริ่มต้น
 
 // ── Filter Time ───────────────────────────────────────────
-function filterTime() {
-  const selectedDate = document.getElementById('inp-date').value;
+function filterTime(dateId, timeId) {
+  const selectedDate = document.getElementById(dateId).value;
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
   const thHour = (now.getUTCHours() + 7) % 24;
   const minHour = (selectedDate === today || !selectedDate) ? thHour + 2 : 0;
-  const timeSel = document.getElementById('inp-time');
+  const timeSel = document.getElementById(timeId);
   timeSel.innerHTML = '<option value="">-- เลือก --</option>';
   for (let h = 0; h <= 23; h++) {
     if (h < minHour) continue;
@@ -255,9 +331,23 @@ async function init() {
     if (!liff.isLoggedIn()) { liff.login(); return; }
     const p = await liff.getProfile();
     U.userId = p.userId;
-    document.getElementById('inp-date').min = new Date().toISOString().split('T')[0];
-    filterTime();
-    document.getElementById('inp-date').addEventListener('change', filterTime);
+
+    const today = new Date().toISOString().split('T')[0];
+    ['inp-date', 'inp-date-o'].forEach(id => {
+      const el = document.getElementById(id);
+      el.min = today;
+      el.addEventListener('change', () => {
+        if (id === 'inp-date') filterTime('inp-date', 'inp-time');
+        else filterTime('inp-date-o', 'inp-time-o');
+      });
+    });
+    filterTime('inp-date', 'inp-time');
+    filterTime('inp-date-o', 'inp-time-o');
+
+    // unit onChange
+    document.getElementById('inp-unit').addEventListener('change', function() {
+      document.getElementById('inp-unit-other').classList.toggle('hide', this.value !== '__other__');
+    });
 
     const [uRes, gRes] = await Promise.all([
       fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`).then(r => r.json()),
@@ -265,11 +355,8 @@ async function init() {
     ]);
     gData = gRes;
     _fillTeams(gRes.teams || []);
-    if (uRes.status === 'ok') {
-      _setup(uRes, gRes);
-    } else {
-      document.getElementById('uname').textContent = p.displayName;
-    }
+    if (uRes.status === 'ok') _setup(uRes, gRes);
+    else document.getElementById('uname').textContent = p.displayName;
   } catch(e) {
     console.error(e);
     document.getElementById('uname').textContent = '⚠️ โหลดไม่สำเร็จ';
@@ -288,9 +375,9 @@ function _setup(u, g) {
   userRole = u.role;
 
   document.getElementById('ucard').className    = 'user-card ' + (roleCardCls[u.role] || 'uc-g');
-  document.getElementById('uavatar').className  = 'uc-avatar ' + (roleAvCls[u.role]   || 'av-g');
+  document.getElementById('uavatar').className  = 'uc-avatar ' + (roleAvCls[u.role] || 'av-g');
   document.getElementById('uavatar').textContent = roleIcon[u.role] || '👤';
-  document.getElementById('ubadge').className   = 'uc-badge '  + (roleBgCls[u.role]   || 'bg-g');
+  document.getElementById('ubadge').className   = 'uc-badge ' + (roleBgCls[u.role] || 'bg-g');
   document.getElementById('ubadge').textContent = roleLabel[u.role] || u.role;
 
   if (u.role === 'Owner') {
@@ -299,24 +386,18 @@ function _setup(u, g) {
     const sel = document.getElementById('inp-garden');
     sel.innerHTML = `<option value="${u.gardenId}" selected>${u.gardenName}</option>`;
     sel.classList.add('ro');
-    U.gardenId   = u.gardenId;
-    U.gardenName = u.gardenName;
+    U.gardenId = u.gardenId; U.gardenName = u.gardenName;
     const myGarden = g.gardens.find(x => x.id === u.gardenId);
     if (myGarden) {
       _fillBills(u.billNames || []);
       const pk = myGarden.pickupPoint;
-      if (!pk || pk === 'ไม่มี') {
-        _fillPickups([U.gardenName || 'สวนหลัก']);
-      } else {
-        _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
-      }
+      _fillPickups((!pk || pk === 'ไม่มี') ? [U.gardenName] : pk.split(',').map(s => s.trim()).filter(Boolean));
       _setRspo(myGarden.rspo || 'ไม่มี');
       _setTeam(myGarden.teamId || '');
     }
 
   } else if (u.role === 'Ramp') {
-    U.gardenId   = u.rampId;
-    U.gardenName = u.name;
+    U.gardenId = u.rampId; U.gardenName = u.name;
     document.getElementById('uname').textContent = u.name;
     document.getElementById('usub').textContent  = u.phone;
     document.getElementById('h-ramp').classList.remove('hide');
@@ -326,90 +407,198 @@ function _setup(u, g) {
     document.getElementById('inner-detail').classList.add('locked');
 
   } else if (u.role === 'Admin') {
-    // ── Admin ────────────────────────────────────────────
     document.getElementById('uname').textContent = u.name || u.gardenName;
     document.getElementById('usub').textContent  = u.phone;
     document.getElementById('h-admin').classList.remove('hide');
-    _fillGardens(g.gardens || []);
-
-    // แสดง card มอบหมายคนขับ
     document.getElementById('card-assign').classList.remove('hide');
-
-    // โหลดข้อมูล Admin เพิ่มเติม
-    _loadAdminData();
+    _fillGardens(g.gardens || []);
+    _loadAdminData(g);
 
   } else {
-    // Team
     document.getElementById('uname').textContent = u.name || u.gardenName;
     document.getElementById('usub').textContent  = u.phone;
     _fillGardens(g.gardens || []);
   }
 }
 
-// ── Admin: โหลด pending orders + drivers ─────────────────
-async function _loadAdminData() {
+// ── Admin Data ────────────────────────────────────────────
+async function _loadAdminData(g) {
   try {
     const [ordRes, drvRes] = await Promise.all([
       fetch(`${GAS_URL}?action=getPendingOrders`).then(r => r.json()),
       fetch(`${GAS_URL}?action=getAvailableDrivers`).then(r => r.json())
     ]);
-
-    // fill pending orders (ไม่มีคนขับรับงาน)
     _fillPendingOrders(ordRes.orders || []);
-
-    // fill available drivers (สถานะว่าง)
     _fillDrivers(drvRes.drivers || []);
-
-    // fill ทะเบียนรถทั้งหมด สำหรับ dropdown "ระบุเอง"
     _fillAllPlates(drvRes.drivers || []);
+    // fill สถานที่ส่ง (Garden + Ramp)
+    _fillDestinations(g);
+  } catch(e) { console.error('Admin data load error:', e); }
+}
 
-  } catch(e) {
-    console.error('Admin data load error:', e);
+function _fillDestinations(g) {
+  const sel = document.getElementById('inp-dest');
+  sel.innerHTML = '<option value="">-- เลือกสถานที่ส่ง --</option>';
+  // Gardens
+  const optgGroup = document.createElement('optgroup');
+  optgGroup.label = '🌳 สวน';
+  (g.gardens || []).forEach(garden => {
+    const o = document.createElement('option');
+    o.value = JSON.stringify({ id: garden.id, name: garden.name, type: 'garden', pickup: garden.pickupPoint || '' });
+    o.textContent = garden.name;
+    optgGroup.appendChild(o);
+  });
+  sel.appendChild(optgGroup);
+  // Ramps
+  const optRGroup = document.createElement('optgroup');
+  optRGroup.label = '🏭 ลานเท';
+  (g.ramps || []).forEach(ramp => {
+    const o = document.createElement('option');
+    o.value = JSON.stringify({ id: ramp.id, name: ramp.name, type: 'ramp', pickup: '' });
+    o.textContent = ramp.name;
+    optRGroup.appendChild(o);
+  });
+  sel.appendChild(optRGroup);
+}
+
+function onDestChange() {
+  const sel = document.getElementById('inp-dest');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  const data = JSON.parse(opt.value);
+  const pickupSel = document.getElementById('inp-pickup-o');
+  pickupSel.innerHTML = '<option value="">-- เลือกจุดรับ --</option>';
+  if (data.type === 'ramp') {
+    // ลานเท → จุดรับ = ชื่อลานเทเลย
+    const o = document.createElement('option');
+    o.value = o.textContent = data.name;
+    pickupSel.appendChild(o);
+    pickupSel.selectedIndex = 1;
+  } else {
+    // Garden → ดึงจุดรับจากสวน
+    const pk = data.pickup;
+    if (!pk || pk === 'ไม่มี') {
+      const o = document.createElement('option');
+      o.value = o.textContent = data.name;
+      pickupSel.appendChild(o);
+      pickupSel.selectedIndex = 1;
+    } else {
+      pk.split(',').map(s => s.trim()).filter(Boolean).forEach(p => {
+        const o = document.createElement('option');
+        o.value = o.textContent = p;
+        pickupSel.appendChild(o);
+      });
+      if (pickupSel.options.length === 2) pickupSel.selectedIndex = 1;
+    }
   }
 }
 
+// ── Job Type Switch ────────────────────────────────────────
+function pickJobType(el, type) {
+  document.querySelectorAll('#jobtype-chips .chip-admin').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  currentJobType = type;
+  if (type === 'ปาล์ม') {
+    document.getElementById('form-palm').classList.remove('hide');
+    document.getElementById('form-other').classList.add('hide');
+  } else {
+    document.getElementById('form-palm').classList.add('hide');
+    document.getElementById('form-other').classList.remove('hide');
+  }
+  // ถ้าเปลี่ยน jobtype ให้ clear prefill
+  if (document.getElementById('inp-assign-order').value) {
+    document.getElementById('inp-assign-order').value = '';
+    document.getElementById('prefill-badge').classList.add('hide');
+    _clearPrefill();
+  }
+}
+
+// ── Pending Orders ────────────────────────────────────────
 function _fillPendingOrders(orders) {
   const sel = document.getElementById('inp-assign-order');
-  // เก็บ option แรก (ออเดอร์ใหม่)
-  sel.innerHTML = '<option value="">-- ออเดอร์ใหม่ (ไม่ผูกกับออเดอร์เดิม) --</option>';
+  sel.innerHTML = '<option value="">-- สร้างออเดอร์ใหม่ --</option>';
   orders.forEach(o => {
     const el = document.createElement('option');
     el.value = o.orderId;
-    // แสดง: orderId · ชื่อสวน · วันที่ · เวลา
     el.textContent = `${o.orderId} · ${o.gardenName || o.gardenId} · ${o.date} ${o.time}`;
     el.dataset.gardenId   = o.gardenId   || '';
     el.dataset.gardenName = o.gardenName || '';
     el.dataset.date       = o.date       || '';
     el.dataset.time       = o.time       || '';
+    el.dataset.pickup     = o.pickup     || '';
+    el.dataset.billName   = o.billName   || '';
     sel.appendChild(el);
   });
 }
 
+function onAssignOrderChange() {
+  const sel = document.getElementById('inp-assign-order');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) {
+    document.getElementById('prefill-badge').classList.add('hide');
+    _clearPrefill();
+    return;
+  }
+  // Prefill ข้อมูลจากออเดอร์เดิม
+  document.getElementById('prefill-badge').classList.remove('hide');
+
+  if (currentJobType === 'ปาล์ม') {
+    // วันที่/เวลา
+    if (opt.dataset.date) {
+      document.getElementById('inp-date').value = opt.dataset.date;
+      filterTime('inp-date', 'inp-time');
+      setTimeout(() => { document.getElementById('inp-time').value = opt.dataset.time; }, 50);
+    }
+    // สวน
+    if (opt.dataset.gardenId) {
+      const gardenSel = document.getElementById('inp-garden');
+      gardenSel.value = opt.dataset.gardenId;
+      U.gardenId   = opt.dataset.gardenId;
+      U.gardenName = opt.dataset.gardenName;
+      onGardenChange();
+      // จุดรับ
+      setTimeout(() => {
+        const pkSel = document.getElementById('inp-pickup');
+        for (let i = 0; i < pkSel.options.length; i++) {
+          if (pkSel.options[i].value === opt.dataset.pickup) { pkSel.selectedIndex = i; break; }
+        }
+        // ชื่อในบิล
+        const billSel = document.getElementById('inp-bill');
+        for (let i = 0; i < billSel.options.length; i++) {
+          if (billSel.options[i].value === opt.dataset.billName) { billSel.selectedIndex = i; break; }
+        }
+      }, 100);
+    }
+  }
+}
+
+function _clearPrefill() {
+  // clear วันที่/เวลา ไม่ทำ เพราะผู้ใช้อาจกรอกเองแล้ว
+}
+
+// ── Drivers ───────────────────────────────────────────────
 function _fillDrivers(drivers) {
-  // เก็บ list ไว้ใช้ใน onDriverChange ด้วย
   window._driverList = drivers;
   const sel = document.getElementById('inp-driver');
   sel.innerHTML = '<option value="">-- เลือกคนขับ --</option>';
   drivers.forEach(d => {
     const el = document.createElement('option');
     el.value = d.uid;
-    el.textContent = `${d.name}`;
+    el.textContent = d.name;
     el.dataset.name  = d.name;
-    el.dataset.phone = d.phone  || '';
-    el.dataset.plate = d.plate  || '';
-    el.dataset.type  = d.type   || '';
+    el.dataset.phone = d.phone || '';
+    el.dataset.plate = d.plate || '';
+    el.dataset.type  = d.type  || '';
     sel.appendChild(el);
   });
 }
 
 function _fillAllPlates(drivers) {
-  // รวมทะเบียนทั้งหมดในระบบ ใส่ใน select "ระบุเอง"
   const sel = document.getElementById('inp-plate-custom');
   sel.innerHTML = '<option value="">-- เลือกทะเบียน --</option>';
   const seen = new Set();
   drivers.forEach(d => {
     if (!d.plate) return;
-    // driver อาจมีทะเบียนหลายคัน คั่นด้วย comma
     d.plate.split(',').map(p => p.trim()).filter(Boolean).forEach(plate => {
       if (seen.has(plate)) return;
       seen.add(plate);
@@ -420,51 +609,17 @@ function _fillAllPlates(drivers) {
   });
 }
 
-// เมื่อเลือกออเดอร์ที่มีอยู่ → prefill วันที่ / เวลา
-function onAssignOrderChange() {
-  const sel = document.getElementById('inp-assign-order');
-  const opt = sel.options[sel.selectedIndex];
-  if (!opt || !opt.value) return;
-
-  const date = opt.dataset.date;
-  const time = opt.dataset.time;
-
-  if (date) {
-    document.getElementById('inp-date').value = date;
-    filterTime();
-  }
-  if (time) {
-    // รอ filterTime สร้าง options เสร็จก่อน
-    setTimeout(() => {
-      document.getElementById('inp-time').value = time;
-    }, 50);
-  }
-}
-
-// เมื่อเลือกคนขับ → generate plate chips
 function onDriverChange() {
   const sel = document.getElementById('inp-driver');
   const opt = sel.options[sel.selectedIndex];
   const info = document.getElementById('driver-info');
   const chipsEl = document.getElementById('plate-chips');
   const custSel = document.getElementById('inp-plate-custom');
-
-  // ซ่อน select เอง & เคลียร์ chips ก่อน
   custSel.classList.add('hide');
   chipsEl.innerHTML = '';
-
-  if (!opt || !opt.value) {
-    info.style.display = 'none';
-    return;
-  }
-
-  // แสดง info: เบอร์โทร + ประเภทรถ
-  const phone = opt.dataset.phone || '—';
-  const type  = opt.dataset.type  || '—';
-  info.textContent = `📞 ${phone} · 🚚 ${type}`;
+  if (!opt || !opt.value) { info.style.display = 'none'; return; }
+  info.textContent = `📞 ${opt.dataset.phone || '—'} · 🚚 ${opt.dataset.type || '—'}`;
   info.style.display = 'block';
-
-  // สร้าง chips ทะเบียนรถของคนขับนี้
   const plates = (opt.dataset.plate || '').split(',').map(p => p.trim()).filter(Boolean);
   plates.forEach((plate, i) => {
     const c = document.createElement('span');
@@ -473,26 +628,25 @@ function onDriverChange() {
     c.onclick = () => pickPlate(c, false);
     chipsEl.appendChild(c);
   });
-
-  // เพิ่ม chip "ระบุเอง"
   const cOther = document.createElement('span');
   cOther.className = 'chip-admin';
   cOther.textContent = 'ระบุเอง';
   cOther.onclick = () => pickPlate(cOther, true);
   chipsEl.appendChild(cOther);
-
-  // auto-select chip แรกถ้ามีทะเบียน
-  if (plates.length === 0) {
-    cOther.classList.add('on');
-    custSel.classList.remove('hide');
-  }
+  if (plates.length === 0) { cOther.classList.add('on'); custSel.classList.remove('hide'); }
 }
 
 function pickPlate(el, showCustom) {
   document.querySelectorAll('#plate-chips .chip-admin').forEach(c => c.classList.remove('on'));
   el.classList.add('on');
-  const custSel = document.getElementById('inp-plate-custom');
-  custSel.classList.toggle('hide', !showCustom);
+  document.getElementById('inp-plate-custom').classList.toggle('hide', !showCustom);
+}
+
+// ── Goods chips ───────────────────────────────────────────
+function pickGoods(el, val) {
+  document.querySelectorAll('#goods-chips .chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('inp-goods-other').classList.toggle('hide', val !== 'อื่นๆ');
 }
 
 // ── Fill Helpers ──────────────────────────────────────────
@@ -501,13 +655,12 @@ function _fillGardens(gs) {
   sel.innerHTML = '<option value="">-- เลือกสวน --</option>';
   gs.forEach(g => {
     const o = document.createElement('option');
-    o.value           = g.id;
-    o.textContent     = g.name;
-    o.dataset.bills   = JSON.stringify(g.billNames || []);
-    o.dataset.pickup  = g.pickupPoint || '';
-    o.dataset.location= g.location    || '';
-    o.dataset.rspo    = g.rspo        || 'ไม่มี';
-    o.dataset.teamId  = g.teamId      || '';
+    o.value = g.id; o.textContent = g.name;
+    o.dataset.bills    = JSON.stringify(g.billNames || []);
+    o.dataset.pickup   = g.pickupPoint || '';
+    o.dataset.location = g.location    || '';
+    o.dataset.rspo     = g.rspo        || 'ไม่มี';
+    o.dataset.teamId   = g.teamId      || '';
     sel.appendChild(o);
   });
 }
@@ -515,81 +668,52 @@ function _fillGardens(gs) {
 function _fillBills(bills) {
   const sel = document.getElementById('inp-bill');
   sel.innerHTML = '<option value="">-- เลือกชื่อ --</option>';
-  bills.forEach(b => {
-    const o = document.createElement('option');
-    o.value = o.textContent = b;
-    sel.appendChild(o);
-  });
+  bills.forEach(b => { const o = document.createElement('option'); o.value = o.textContent = b; sel.appendChild(o); });
   if (bills.length === 1) sel.selectedIndex = 1;
 }
 
 function _fillPickups(pickups) {
   const sel = document.getElementById('inp-pickup');
   sel.innerHTML = '<option value="">-- เลือกจุดรับ --</option>';
-  pickups.forEach(p => {
-    const o = document.createElement('option');
-    o.value = o.textContent = p;
-    sel.appendChild(o);
-  });
+  pickups.forEach(p => { const o = document.createElement('option'); o.value = o.textContent = p; sel.appendChild(o); });
   if (pickups.length === 1) sel.selectedIndex = 1;
 }
 
 function _fillTeams(ts) {
   const sel = document.getElementById('inp-team');
-  ts.forEach(t => {
-    const o = document.createElement('option');
-    o.value       = t.id;
-    o.textContent = t.name;
-    sel.appendChild(o);
-  });
+  ts.forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = t.name; sel.appendChild(o); });
 }
 
 function _setRspo(rspoValue) {
-  const chips = document.querySelectorAll('#rspo-container .chip');
-  chips.forEach(chip => {
+  document.querySelectorAll('#rspo-container .chip').forEach(chip => {
     const txt = chip.textContent.trim();
-    const isMatch =
+    chip.classList.toggle('on',
       (rspoValue === 'มี' || rspoValue === 'มี RSPO') && txt === 'มี RSPO' ||
-      rspoValue === 'ไม่มี' && txt === 'ไม่มี';
-    chip.classList.toggle('on', isMatch);
+      rspoValue === 'ไม่มี' && txt === 'ไม่มี'
+    );
   });
 }
 
 function _setTeam(teamId) {
-  const chips   = document.querySelectorAll('#team-chips .chip');
+  const chips = document.querySelectorAll('#team-chips .chip');
   const teamSel = document.getElementById('inp-team');
   if (teamId && teamId !== 'ไม่มี') {
-    chips.forEach(c => c.classList.remove('on'));
-    chips[1].classList.add('on');
-    teamSel.classList.remove('hide');
-    teamSel.value = teamId;
+    chips.forEach(c => c.classList.remove('on')); chips[1].classList.add('on');
+    teamSel.classList.remove('hide'); teamSel.value = teamId;
   } else {
-    chips.forEach(c => c.classList.remove('on'));
-    chips[0].classList.add('on');
+    chips.forEach(c => c.classList.remove('on')); chips[0].classList.add('on');
     teamSel.classList.add('hide');
   }
 }
 
-// ── Garden Change (Admin เปลี่ยนสวน) ─────────────────────
 function onGardenChange() {
-  const o   = document.getElementById('inp-garden');
+  const o = document.getElementById('inp-garden');
   const opt = o.options[o.selectedIndex];
-  if (!opt || !opt.value) {
-    _fillBills([]);
-    _fillPickups([]);
-    _setRspo('ไม่มี');
-    _setTeam('');
-    return;
-  }
-  U.gardenId   = opt.value;
-  U.gardenName = opt.textContent;
+  if (!opt || !opt.value) { _fillBills([]); _fillPickups([]); _setRspo('ไม่มี'); _setTeam(''); return; }
+  U.gardenId = opt.value; U.gardenName = opt.textContent;
   _fillBills(JSON.parse(opt.dataset.bills || '[]'));
   const pk = opt.dataset.pickup;
-  if (!pk || pk === 'ไม่มี') {
-    _fillPickups([opt.textContent || 'สวนหลัก']);
-  } else {
-    _fillPickups(pk.split(',').map(s => s.trim()).filter(Boolean));
-  }
+  _fillPickups((!pk || pk === 'ไม่มี') ? [opt.textContent] : pk.split(',').map(s => s.trim()).filter(Boolean));
   _setRspo(opt.dataset.rspo   || 'ไม่มี');
   _setTeam(opt.dataset.teamId || '');
 }
@@ -603,109 +727,130 @@ function pickSel(el, show, id) {
   pick(el);
   document.getElementById(id).classList.toggle('hide', !show);
 }
-function pickAdmin(el, groupId) {
-  document.querySelectorAll(`#${groupId} .chip-admin`).forEach(c => c.classList.remove('on'));
-  el.classList.add('on');
-}
 
-// ── ดึงค่าจาก Admin fields ────────────────────────────────
+// ── Get Admin Fields ──────────────────────────────────────
 function _getAdminFields() {
   if (userRole !== 'Admin') return {};
-
   const ordSel = document.getElementById('inp-assign-order');
   const drvSel = document.getElementById('inp-driver');
-
-  // ทะเบียน: chip ที่เลือก หรือ dropdown ระบุเอง
   const plateChipOn = document.querySelector('#plate-chips .chip-admin.on');
   let plate = '';
-  if (plateChipOn && plateChipOn.textContent !== 'ระบุเอง') {
-    plate = plateChipOn.textContent.trim();
-  } else {
-    plate = document.getElementById('inp-plate-custom').value;
-  }
-
-  // ประเภทงาน
-  const jobChip = document.querySelector('#jobtype-chips .chip-admin.on');
-  const jobType = jobChip ? jobChip.textContent.trim() : '';
-
+  if (plateChipOn && plateChipOn.textContent !== 'ระบุเอง') plate = plateChipOn.textContent.trim();
+  else plate = document.getElementById('inp-plate-custom').value;
   return {
     assignOrderId : ordSel.value || '',
     driverUid     : drvSel.value || '',
     driverName    : drvSel.options[drvSel.selectedIndex]?.dataset?.name || '',
     plate,
-    jobType
+    jobType       : currentJobType
   };
 }
 
 // ── Submit ────────────────────────────────────────────────
 async function submitForm() {
-  const date   = document.getElementById('inp-date').value;
-  const time   = document.getElementById('inp-time').value;
-  const bill   = document.getElementById('inp-bill').value;
-  const pickup = document.getElementById('inp-pickup').value;
-  const binEl  = document.getElementById('inp-bin');
-  const teamEl = document.getElementById('inp-team');
+  const isPalm  = currentJobType === 'ปาล์ม';
+  const isAdmin = userRole === 'Admin';
 
-  if (!date)   { alert('กรุณาเลือกวันที่ครับ'); return; }
-  if (!time)   { alert('กรุณาเลือกเวลาครับ');   return; }
-  if (!U.gardenId && userRole !== 'Ramp') { alert('กรุณาเลือกสวนครับ'); return; }
-
-  // ตรวจ Admin fields
-  if (userRole === 'Admin') {
+  // ── Validate Admin fields ──
+  if (isAdmin) {
     const af = _getAdminFields();
     if (!af.driverUid) { alert('กรุณาเลือกคนขับครับ'); return; }
     if (!af.plate)     { alert('กรุณาระบุทะเบียนรถครับ'); return; }
   }
 
-  const rspoChip = document.querySelector('#rspo-container .chip.on');
-  const rspoText = rspoChip ? rspoChip.textContent.trim() : 'ไม่มี';
-  const rspo     = (rspoText === 'มี RSPO') ? 'มี' : 'ไม่มี';
+  let payload = {};
 
-  const binChip  = document.querySelector('#bin-chips .chip.on');
-  const binCount = !binEl.classList.contains('hide')
-    ? parseInt(binEl.value) || 3
-    : parseInt(binChip ? binChip.textContent : '1') || 1;
+  if (isPalm) {
+    // ── ปาล์ม ──
+    const date   = document.getElementById('inp-date').value;
+    const time   = document.getElementById('inp-time').value;
+    const bill   = document.getElementById('inp-bill').value;
+    const pickup = document.getElementById('inp-pickup').value;
+    const binEl  = document.getElementById('inp-bin');
+    const teamEl = document.getElementById('inp-team');
+
+    if (!date)        { alert('กรุณาเลือกวันที่ครับ'); return; }
+    if (!time)        { alert('กรุณาเลือกเวลาครับ'); return; }
+    if (!U.gardenId && userRole !== 'Ramp') { alert('กรุณาเลือกสวนครับ'); return; }
+
+    const rspoChip = document.querySelector('#rspo-container .chip.on');
+    const rspo = (rspoChip?.textContent.trim() === 'มี RSPO') ? 'มี' : 'ไม่มี';
+    const binChip = document.querySelector('#bin-chips .chip.on');
+    const binCount = !binEl.classList.contains('hide')
+      ? parseInt(binEl.value) || 3
+      : parseInt(binChip?.textContent || '1') || 1;
+
+    payload = {
+      action: 'submitOrder', userId: U.userId,
+      gardenId: U.gardenId || '', gardenName: U.gardenName || '',
+      date, time, billName: bill, pickupPoint: pickup, rspo,
+      teamId: (!teamEl.classList.contains('hide')) ? teamEl.value : 'ไม่มี',
+      binCount, note: document.getElementById('inp-note').value,
+      jobType: 'ปาล์ม'
+    };
+
+  } else {
+    // ── อื่นๆ ──
+    const date   = document.getElementById('inp-date-o').value;
+    const time   = document.getElementById('inp-time-o').value;
+    const destSel = document.getElementById('inp-dest');
+    const destOpt = destSel.options[destSel.selectedIndex];
+    const pickup  = document.getElementById('inp-pickup-o').value;
+    const qty     = document.getElementById('inp-qty').value;
+    const unitVal = document.getElementById('inp-unit').value;
+    const unit    = unitVal === '__other__' ? document.getElementById('inp-unit-other').value : unitVal;
+
+    // ประเภทสินค้า
+    const goodsChip = document.querySelector('#goods-chips .chip.on');
+    let goodsType = goodsChip?.textContent.replace(/[🌱🪚⛏️📦]/g,'').trim() || '';
+    if (goodsType === 'อื่นๆ') goodsType = document.getElementById('inp-goods-other').value.trim();
+
+    if (!date)       { alert('กรุณาเลือกวันที่ครับ'); return; }
+    if (!time)       { alert('กรุณาเลือกเวลาครับ'); return; }
+    if (!goodsType)  { alert('กรุณาเลือกรายการสินค้าครับ'); return; }
+    if (!qty || parseFloat(qty) <= 0) { alert('กรุณาระบุจำนวนครับ'); return; }
+    if (!unit)       { alert('กรุณาระบุหน่วยครับ'); return; }
+    if (!destOpt?.value) { alert('กรุณาเลือกสถานที่ส่งครับ'); return; }
+    if (!pickup)     { alert('กรุณาระบุจุดรับครับ'); return; }
+
+    const destData = JSON.parse(destOpt.value);
+    const note = `สินค้า: ${goodsType} จำนวน ${qty} ${unit}` +
+                 (document.getElementById('inp-note-o').value ? ` | ${document.getElementById('inp-note-o').value}` : '');
+
+    payload = {
+      action: 'submitOrder', userId: U.userId,
+      gardenId: destData.id, gardenName: destData.name,
+      date, time,
+      billName: destData.name, pickupPoint: pickup,
+      rspo: 'ไม่มี', teamId: 'ไม่มี', binCount: 1,
+      note, jobType: 'อื่นๆ',
+      goodsType, qty, unit
+    };
+  }
+
+  // Admin extra fields
+  if (isAdmin) {
+    const af = _getAdminFields();
+    Object.assign(payload, {
+      assignOrderId : af.assignOrderId,
+      driverUid     : af.driverUid,
+      driverName    : af.driverName,
+      plate         : af.plate
+    });
+  }
 
   document.getElementById('overlay').classList.add('show');
   document.getElementById('btn-sub').disabled = true;
 
   try {
-    const adminFields = _getAdminFields();
-
-    const payload = {
-      action: 'submitOrder',
-      userId: U.userId,
-      gardenId: U.gardenId || '',
-      gardenName: U.gardenName || '',
-      date,
-      time,
-      billName: bill,
-      pickupPoint: pickup,
-      rspo,
-      teamId: (!teamEl.classList.contains('hide')) ? teamEl.value : 'ไม่มี',
-      binCount,
-      note: document.getElementById('inp-note').value,
-      // ── Admin extra ──
-      ...(userRole === 'Admin' && {
-        assignOrderId : adminFields.assignOrderId,
-        driverUid     : adminFields.driverUid,
-        driverName    : adminFields.driverName,
-        plate         : adminFields.plate,
-        jobType       : adminFields.jobType
-      })
-    };
-
     const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
     const r   = await res.json();
-
     document.getElementById('overlay').classList.remove('show');
-
     if (r.success) {
+      const af = isAdmin ? _getAdminFields() : {};
       document.getElementById('success-msg').innerHTML =
         `รับออเดอร์ <b>${r.orderId}</b> แล้วครับ<br>` +
-        (userRole === 'Admin' && adminFields.driverName
-          ? `มอบหมายให้ <b>${adminFields.driverName}</b> แล้ว`
-          : 'Admin จะยืนยันเร็วๆ นี้');
+        (isAdmin && af.driverName ? `มอบหมายให้ <b>${af.driverName}</b> แล้ว` : 'Admin จะยืนยันเร็วๆ นี้');
       document.getElementById('success').classList.add('show');
     } else {
       alert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
