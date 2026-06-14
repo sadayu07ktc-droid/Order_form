@@ -75,6 +75,11 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .hide{display:none}
 .driver-info{font-size:11px;color:var(--text-m);padding:6px 10px;background:rgba(79,70,229,.06);border-radius:8px;margin-top:6px;display:none}
 .prefill-badge{font-size:10px;background:#FEF3C7;color:#92400E;border:.5px solid #FDE68A;border-radius:6px;padding:3px 8px;margin-bottom:10px;display:inline-block}
+.goods-row{background:var(--cream);border:.5px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
+.goods-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.goods-row-title{font-size:11px;font-weight:700;color:var(--green-d)}
+.btn-remove{background:#FEE2E2;color:var(--red);border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Sarabun',sans-serif}
+.btn-add{background:var(--green-l);color:var(--green-d);border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;width:100%;margin-top:4px}
 </style>
 </head>
 <body>
@@ -232,29 +237,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 
     <div class="card">
       <div class="stitle">📦 รายการสินค้า</div>
-      <div class="fld">
-        <label>ประเภทสินค้า <span class="req">*</span></label>
-        <div class="chips" id="goods-chips">
-          <span class="chip" onclick="pickGoods(this,'ปุ๋ย')">🌱 ปุ๋ย</span>
-          <span class="chip" onclick="pickGoods(this,'เคียว')">🪚 เคียว</span>
-          <span class="chip" onclick="pickGoods(this,'เสียม')">⛏️ เสียม</span>
-          <span class="chip" onclick="pickGoods(this,'อื่นๆ')">📦 อื่นๆ</span>
-        </div>
-        <input class="inp hide" id="inp-goods-other" style="margin-top:8px" placeholder="ระบุรายการสินค้า...">
-      </div>
-      <div class="fld" style="margin:0">
-        <label>จำนวน <span class="req">*</span></label>
-        <div class="row2">
-          <input class="inp" type="number" id="inp-qty" placeholder="0" min="1">
-          <select class="inp" id="inp-unit">
-            <option value="">-- หน่วย --</option>
-            <option>ตัน</option><option>กระสอบ</option><option>ชิ้น</option><option>อัน</option>
-            <option value="__other__">ระบุเอง</option>
-          </select>
-        </div>
-        <input class="inp hide" id="inp-unit-other" style="margin-top:8px" placeholder="ระบุหน่วย...">
-      </div>
+      <div id="goods-rows"></div>
+      <button class="btn-add" type="button" onclick="addGoodsRow()">➕ เพิ่มรายการ</button>
     </div>
+
 
     <div class="card">
       <div class="stitle">📍 สถานที่</div>
@@ -331,9 +317,7 @@ async function init() {
     filterTime('inp-date', 'inp-time');
     filterTime('inp-date-o', 'inp-time-o');
 
-    document.getElementById('inp-unit').addEventListener('change', function() {
-      document.getElementById('inp-unit-other').classList.toggle('hide', this.value !== '__other__');
-    });
+    // (unit-other handled per goods row now)
 
     const [uRes, gRes] = await Promise.all([
       fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`).then(r => r.json()),
@@ -487,6 +471,7 @@ function pickJobType(el, type) {
   } else {
     document.getElementById('form-palm').classList.add('hide');
     document.getElementById('form-other').classList.remove('hide');
+    if (document.getElementById('goods-rows').children.length === 0) addGoodsRow();
   }
   if (document.getElementById('inp-assign-order').value) {
     document.getElementById('inp-assign-order').value = '';
@@ -686,12 +671,84 @@ function pickDispatch(el, mode) {
   }
 }
 
-// ── Goods chips ───────────────────────────────────────────
-function pickGoods(el, val) {
-  document.querySelectorAll('#goods-chips .chip').forEach(c => c.classList.remove('on'));
-  el.classList.add('on');
-  document.getElementById('inp-goods-other').classList.toggle('hide', val !== 'อื่นๆ');
+// ── Goods rows (รายการสินค้าหลายรายการ) ────────────────────
+let goodsRowCounter = 0;
+
+function addGoodsRow() {
+  goodsRowCounter++;
+  const id = goodsRowCounter;
+  const div = document.createElement('div');
+  div.className = 'goods-row';
+  div.id = `goods-row-${id}`;
+  div.innerHTML = `
+    <div class="goods-row-header">
+      <span class="goods-row-title" id="goods-row-title-${id}">รายการที่ 1</span>
+      <button class="btn-remove" type="button" onclick="removeGoodsRow(${id})">ลบ</button>
+    </div>
+    <div class="fld">
+      <label>ประเภทสินค้า <span class="req">*</span></label>
+      <div class="chips" id="goods-chips-${id}">
+        <span class="chip" onclick="pickGoods(this,${id},'ปุ๋ย')">🌱 ปุ๋ย</span>
+        <span class="chip" onclick="pickGoods(this,${id},'เคียว')">🪚 เคียว</span>
+        <span class="chip" onclick="pickGoods(this,${id},'เสียม')">⛏️ เสียม</span>
+        <span class="chip" onclick="pickGoods(this,${id},'อื่นๆ')">📦 อื่นๆ</span>
+      </div>
+      <input class="inp hide" id="inp-goods-other-${id}" style="margin-top:8px" placeholder="ระบุรายการสินค้า...">
+    </div>
+    <div class="fld" style="margin:0">
+      <label>จำนวน <span class="req">*</span></label>
+      <div class="row2">
+        <input class="inp" type="number" id="inp-qty-${id}" placeholder="0" min="1">
+        <select class="inp" id="inp-unit-${id}" onchange="document.getElementById('inp-unit-other-${id}').classList.toggle('hide', this.value !== '__other__')">
+          <option value="">-- หน่วย --</option>
+          <option>ตัน</option><option>กระสอบ</option><option>ชิ้น</option><option>อัน</option>
+          <option value="__other__">ระบุเอง</option>
+        </select>
+      </div>
+      <input class="inp hide" id="inp-unit-other-${id}" style="margin-top:8px" placeholder="ระบุหน่วย...">
+    </div>`;
+  document.getElementById('goods-rows').appendChild(div);
+  renumberGoodsRows();
 }
+
+function removeGoodsRow(id) {
+  document.getElementById(`goods-row-${id}`)?.remove();
+  renumberGoodsRows();
+}
+
+function renumberGoodsRows() {
+  const rows = document.querySelectorAll('#goods-rows .goods-row');
+  rows.forEach((row, i) => {
+    const rowId = row.id.replace('goods-row-', '');
+    const titleEl = document.getElementById(`goods-row-title-${rowId}`);
+    if (titleEl) titleEl.textContent = `รายการที่ ${i + 1}`;
+    const btn = row.querySelector('.btn-remove');
+    if (btn) btn.style.display = rows.length <= 1 ? 'none' : '';
+  });
+}
+
+function pickGoods(el, id, val) {
+  document.querySelectorAll(`#goods-chips-${id} .chip`).forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById(`inp-goods-other-${id}`).classList.toggle('hide', val !== 'อื่นๆ');
+}
+
+// อ่านข้อมูลทุกรายการสินค้า → คืนค่า array [{goodsType, qty, unit}]
+function getGoodsItems() {
+  const items = [];
+  document.querySelectorAll('#goods-rows .goods-row').forEach(row => {
+    const id = row.id.replace('goods-row-', '');
+    const chip = row.querySelector(`#goods-chips-${id} .chip.on`);
+    let goodsType = chip?.textContent.replace(/[🌱🪚⛏️📦]/g,'').trim() || '';
+    if (goodsType === 'อื่นๆ') goodsType = document.getElementById(`inp-goods-other-${id}`).value.trim();
+    const qty = document.getElementById(`inp-qty-${id}`).value;
+    const unitVal = document.getElementById(`inp-unit-${id}`).value;
+    const unit = unitVal === '__other__' ? document.getElementById(`inp-unit-other-${id}`).value.trim() : unitVal;
+    items.push({ goodsType, qty, unit });
+  });
+  return items;
+}
+
 
 // ── Fill Helpers ──────────────────────────────────────────
 function _fillGardens(gs) {
@@ -840,24 +897,25 @@ async function submitForm() {
     const destSel = document.getElementById('inp-dest');
     const destOpt = destSel.options[destSel.selectedIndex];
     const pickup  = document.getElementById('inp-pickup-o').value;
-    const qty     = document.getElementById('inp-qty').value;
-    const unitVal = document.getElementById('inp-unit').value;
-    const unit    = unitVal === '__other__' ? document.getElementById('inp-unit-other').value : unitVal;
 
-    const goodsChip = document.querySelector('#goods-chips .chip.on');
-    let goodsType = goodsChip?.textContent.replace(/[🌱🪚⛏️📦]/g,'').trim() || '';
-    if (goodsType === 'อื่นๆ') goodsType = document.getElementById('inp-goods-other').value.trim();
+    const items = getGoodsItems();
 
     if (!date)       { alert('กรุณาเลือกวันที่ครับ'); return; }
     if (!time)       { alert('กรุณาเลือกเวลาครับ'); return; }
-    if (!goodsType)  { alert('กรุณาเลือกรายการสินค้าครับ'); return; }
-    if (!qty || parseFloat(qty) <= 0) { alert('กรุณาระบุจำนวนครับ'); return; }
-    if (!unit)       { alert('กรุณาระบุหน่วยครับ'); return; }
+    if (items.length === 0) { alert('กรุณาเพิ่มรายการสินค้าครับ'); return; }
+    for (const it of items) {
+      if (!it.goodsType) { alert('กรุณาเลือกรายการสินค้าให้ครบทุกรายการครับ'); return; }
+      if (!it.qty || parseFloat(it.qty) <= 0) { alert('กรุณาระบุจำนวนให้ครบทุกรายการครับ'); return; }
+      if (!it.unit) { alert('กรุณาระบุหน่วยให้ครบทุกรายการครับ'); return; }
+    }
     if (!destOpt?.value) { alert('กรุณาเลือกสถานที่ส่งครับ'); return; }
     if (!pickup)     { alert('กรุณาระบุจุดรับครับ'); return; }
 
     const destData = JSON.parse(destOpt.value);
-    const note = `สินค้า: ${goodsType} จำนวน ${qty} ${unit}` +
+
+    // สรุปรายการสินค้าทั้งหมดรวมเป็นหมายเหตุ
+    const itemsSummary = items.map(it => `${it.goodsType} จำนวน ${it.qty} ${it.unit}`).join(', ');
+    const note = `สินค้า: ${itemsSummary}` +
                  (document.getElementById('inp-note-o').value ? ` | ${document.getElementById('inp-note-o').value}` : '');
 
     payload = {
@@ -865,7 +923,7 @@ async function submitForm() {
       gardenId: destData.id, gardenName: destData.name,
       date, time, billName: destData.name, pickupPoint: pickup,
       rspo: 'ไม่มี', teamId: 'ไม่มี', binCount: 1,
-      note, jobType: 'อื่นๆ', goodsType, qty, unit
+      note, jobType: 'อื่นๆ', items
     };
   }
 
