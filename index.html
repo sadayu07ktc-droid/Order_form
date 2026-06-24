@@ -6,6 +6,8 @@
 <title>สั่งงานขนส่ง — SSB</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <style>
 :root{
   --green:#4A7C3F;--green-d:#2d5a24;--green-l:#D6E8D0;--green-pale:#EEF7EB;
@@ -80,6 +82,12 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .goods-row-title{font-size:11px;font-weight:700;color:var(--green-d)}
 .btn-remove{background:#FEE2E2;color:var(--red);border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Sarabun',sans-serif}
 .btn-add{background:var(--green-l);color:var(--green-d);border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;width:100%;margin-top:4px}
+.ts-control{background:var(--cream)!important;border:.5px solid var(--border)!important;border-radius:9px!important;padding:10px 12px!important;font-size:14px;font-family:'Sarabun',sans-serif;color:var(--text);min-height:auto!important}
+.ts-control:focus-within{border-color:var(--green)!important;box-shadow:none!important}
+.ts-wrapper.single .ts-control{background:var(--cream)!important}
+.ts-dropdown{border:.5px solid var(--border);border-radius:9px;font-family:'Sarabun',sans-serif;font-size:14px;margin-top:4px}
+.ts-dropdown .active{background:var(--green-l)!important;color:var(--green-d)!important}
+.ts-control input::placeholder{color:var(--text-l)}
 </style>
 </head>
 <body>
@@ -278,6 +286,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqf
 const LIFF_ID = '2010274217-BF41B8c2';
 let U = {}, gData = {}, userRole = '';
 let currentJobType = 'ปาล์ม';
+let gardenTS = null;   // ✅ Tom Select instance ช่องสวน
 
 // ── Filter Time ───────────────────────────────────────────
 function filterTime(dateId, timeId) {
@@ -382,12 +391,14 @@ function _setup(u, g) {
     document.getElementById('h-admin').classList.remove('hide');
     document.getElementById('card-assign').classList.remove('hide');
     _fillGardens(g.gardens || []);
+    _initGardenSearch();
     _loadAdminData(g);
   } else if (u.role === 'Team') {
     // ทีมตัดสั่งเอง → เลือกสวนได้ แต่ "ทีมตัด" ล็อกเป็นทีมตัวเอง
     document.getElementById('uname').textContent = u.name;
     document.getElementById('usub').textContent  = `${u.phone} · ${u.teamId || ''}`;
     _fillGardens(g.gardens || []);
+    _initGardenSearch();
 
     U.teamId = u.teamId || '';
     const teamSel = document.getElementById('inp-team');
@@ -414,6 +425,7 @@ function _setup(u, g) {
     document.getElementById('uname').textContent = u.name || u.gardenName;
     document.getElementById('usub').textContent  = u.phone;
     _fillGardens(g.gardens || []);
+    _initGardenSearch();
   }
 }
 
@@ -824,6 +836,17 @@ function _fillGardens(gs) {
     o.dataset.rspo     = g.rspo        || 'ไม่มี';
     o.dataset.teamId   = g.teamId      || '';
     sel.appendChild(o);
+  });
+}
+
+// ✅ แปลงช่องเลือกสวนเป็น dropdown ค้นหาได้ (Tom Select)
+function _initGardenSearch() {
+  if (gardenTS) { gardenTS.destroy(); gardenTS = null; }
+  gardenTS = new TomSelect('#inp-garden', {
+    create: false,
+    sortField: { field: 'text', direction: 'asc' },
+    placeholder: '🔍 พิมพ์ค้นหาสวน...',
+    onChange: function() { onGardenChange(); }
   });
 }
 
