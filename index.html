@@ -404,6 +404,9 @@ async function _loadAdminData(g) {
     _fillDrivers(drvRes.drivers || []);
     _fillAllPlates(drvRes.drivers || []);
     _fillDestinations(g);
+
+    // ✅ ถ้ามี ?orderId= จาก URL (มาจากการ์ด timeout / Notify / Status) → เลือกออเดอร์นั้นอัตโนมัติ
+    _applyPresetOrderId();
   } catch(e) { console.error('Admin data load error:', e); }
 }
 
@@ -500,6 +503,41 @@ function _fillPendingOrders(orders) {
     el.dataset.note      = o.note       || '';
     sel.appendChild(el);
   });
+}
+
+// ── อ่าน ?orderId= จาก URL → เลือกใน dropdown + prefill อัตโนมัติ ──
+function _applyPresetOrderId() {
+  const presetId = new URLSearchParams(location.search).get('orderId');
+  if (!presetId) return;
+
+  const sel = document.getElementById('inp-assign-order');
+  // หา option ที่ตรงกับ orderId (เผื่อ split order เช่น xxx-1 ก็ลอง match ตัวเต็มก่อน)
+  let matched = false;
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === presetId) { sel.selectedIndex = i; matched = true; break; }
+  }
+  if (!matched) {
+    // ลอง match แบบขึ้นต้น (กรณีส่ง base id มาแต่ option เป็น xxx-1)
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value && sel.options[i].value.indexOf(presetId) === 0) {
+        sel.selectedIndex = i; matched = true; break;
+      }
+    }
+  }
+
+  if (matched) {
+    onAssignOrderChange();              // prefill ฟอร์มจากออเดอร์เดิม
+    // default เป็น "ระบุคนขับ" เพราะมาจากปุ่ม "หาคนขับเอง"
+    const assignChip = document.querySelector('#dispatch-chips .chip-admin:nth-child(2)');
+    if (assignChip) pickDispatch(assignChip, 'assign');
+    // เลื่อนไปการ์ดจัดการออเดอร์ให้เห็นชัด
+    document.getElementById('card-assign').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    // ไม่เจอใน list (ออเดอร์อาจไม่ pending แล้ว) → แจ้งเตือนเบา ๆ
+    const badge = document.getElementById('prefill-badge');
+    badge.textContent = '⚠️ ไม่พบออเดอร์ ' + presetId + ' ใน list (อาจถูกจัดการไปแล้ว)';
+    badge.classList.remove('hide');
+  }
 }
 
 function onAssignOrderChange() {
