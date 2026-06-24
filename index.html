@@ -179,7 +179,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
           <select class="inp" id="inp-bill"><option value="">-- เลือกชื่อ --</option></select>
         </div>
         <div class="fld" style="margin:0"><label>จุดรับ <span class="req">*</span></label>
-          <select class="inp" id="inp-pickup"><option value="">-- เลือกจุดรับ --</option></select>
+          <select class="inp" id="inp-pickup" onchange="onPickupChange()"><option value="">-- เลือกจุดรับ --</option></select>
         </div>
       </div>
     </div>
@@ -360,9 +360,9 @@ function _setup(u, g) {
     const myGarden = g.gardens.find(x => x.id === u.gardenId);
     if (myGarden) {
       _fillBills(u.billNames || []);
-      const pk = myGarden.pickupPoint;
-      _fillPickups((!pk || pk === 'ไม่มี') ? [U.gardenName] : pk.split(',').map(s => s.trim()).filter(Boolean));
-      _setRspo(myGarden.rspo || 'ไม่มี');
+      _fillPickups(myGarden.pickups || []);   // ✅ ใช้ pickups array
+      // หลายจุด → RSPO default สวนไปก่อน (เปลี่ยนตอนเลือกจุด); จุดเดียว _fillPickups เซ็ตให้แล้ว
+      if (!myGarden.pickups || myGarden.pickups.length !== 1) _setRspo(myGarden.rspo || 'ไม่มี');
       _setTeam(myGarden.teamId || '');
     }
 
@@ -569,18 +569,14 @@ function _applyPresetOrderId() {
 function onAssignOrderChange() {
   const sel = document.getElementById('inp-assign-order');
   const opt = sel.options[sel.selectedIndex];
-
   if (!opt || !opt.value) {
     document.getElementById('prefill-badge').classList.add('hide');
     _unlockOrderForm();
     return;
   }
-
   document.getElementById('prefill-badge').classList.remove('hide');
-
   const ownerUid  = opt.dataset.ownerUid || '';
   const isRampOrd = window._rampUids && window._rampUids.includes(ownerUid);
-
   if (currentJobType === 'ปาล์ม') {
     // วันที่/เวลา
     if (opt.dataset.date) {
@@ -588,7 +584,6 @@ function onAssignOrderChange() {
       filterTime('inp-date', 'inp-time');
       setTimeout(() => { document.getElementById('inp-time').value = opt.dataset.time; }, 50);
     }
-
     if (isRampOrd) {
       // ออเดอร์จากลานเท → ล็อก bill + detail
       document.getElementById('lk-bill').classList.remove('hide');
@@ -609,7 +604,11 @@ function onAssignOrderChange() {
         setTimeout(() => {
           const pkSel = document.getElementById('inp-pickup');
           for (let i = 0; i < pkSel.options.length; i++) {
-            if (pkSel.options[i].value === opt.dataset.pickup) { pkSel.selectedIndex = i; break; }
+            if (pkSel.options[i].value === opt.dataset.pickup) {
+              pkSel.selectedIndex = i;
+              onPickupChange();   // ✅ อัปเดต RSPO ตามจุดที่ prefill
+              break;
+            }
           }
           const billSel = document.getElementById('inp-bill');
           for (let i = 0; i < billSel.options.length; i++) {
@@ -618,10 +617,8 @@ function onAssignOrderChange() {
         }, 100);
       }
     }
-
     // กระบะ
     _prefillBinCount(parseInt(opt.dataset.binCount) || 1);
-
     // หมายเหตุ
     if (opt.dataset.note) document.getElementById('inp-note').value = opt.dataset.note;
   }
@@ -822,7 +819,7 @@ function _fillGardens(gs) {
     const o = document.createElement('option');
     o.value = g.id; o.textContent = g.name;
     o.dataset.bills    = JSON.stringify(g.billNames || []);
-    o.dataset.pickup   = g.pickupPoint || '';
+    o.dataset.pickups  = JSON.stringify(g.pickups || []);   // ✅ จุดรับ array (name/rspo/location)
     o.dataset.location = g.location    || '';
     o.dataset.rspo     = g.rspo        || 'ไม่มี';
     o.dataset.teamId   = g.teamId      || '';
@@ -837,11 +834,31 @@ function _fillBills(bills) {
   if (bills.length === 1) sel.selectedIndex = 1;
 }
 
+// pickups = [{name, rspo, location}, ...]
 function _fillPickups(pickups) {
   const sel = document.getElementById('inp-pickup');
   sel.innerHTML = '<option value="">-- เลือกจุดรับ --</option>';
-  pickups.forEach(p => { const o = document.createElement('option'); o.value = o.textContent = p; sel.appendChild(o); });
-  if (pickups.length === 1) sel.selectedIndex = 1;
+  (pickups || []).forEach(p => {
+    const o = document.createElement('option');
+    o.value = o.textContent = p.name;
+    o.dataset.rspo = p.rspo || 'ไม่มี';        // ✅ เก็บ RSPO ของจุดนี้
+    o.dataset.location = p.location || '';
+    sel.appendChild(o);
+  });
+  // มีจุดเดียว → เลือกให้เลย + เซ็ต RSPO ตามจุดนั้น
+  if (pickups && pickups.length === 1) {
+    sel.selectedIndex = 1;
+    _setRspo(pickups[0].rspo || 'ไม่มี');
+  }
+}
+
+// ✅ เลือกจุดรับ → RSPO เปลี่ยนตามจุดนั้น
+function onPickupChange() {
+  const sel = document.getElementById('inp-pickup');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt && opt.dataset && opt.dataset.rspo) {
+    _setRspo(opt.dataset.rspo);
+  }
 }
 
 function _fillTeams(ts) {
@@ -877,9 +894,14 @@ function onGardenChange() {
   if (!opt || !opt.value) { _fillBills([]); _fillPickups([]); _setRspo('ไม่มี'); _setTeam(''); return; }
   U.gardenId = opt.value; U.gardenName = opt.textContent;
   _fillBills(JSON.parse(opt.dataset.bills || '[]'));
-  const pk = opt.dataset.pickup;
-  _fillPickups((!pk || pk === 'ไม่มี') ? [opt.textContent] : pk.split(',').map(s => s.trim()).filter(Boolean));
-  _setRspo(opt.dataset.rspo   || 'ไม่มี');
+
+  // ✅ จุดรับจาก array (LOG_Pickup หรือ fallback ชื่อสวน)
+  const pickups = JSON.parse(opt.dataset.pickups || '[]');
+  _fillPickups(pickups);
+
+  // ถ้ามีหลายจุด → ยังไม่เลือก → RSPO ใช้ default ของสวนไปก่อน (จะเปลี่ยนตอนเลือกจุด)
+  if (pickups.length !== 1) _setRspo(opt.dataset.rspo || 'ไม่มี');
+
   _setTeam(opt.dataset.teamId || '');
 }
 
