@@ -383,7 +383,33 @@ function _setup(u, g) {
     document.getElementById('card-assign').classList.remove('hide');
     _fillGardens(g.gardens || []);
     _loadAdminData(g);
+  } else if (u.role === 'Team') {
+    // ทีมตัดสั่งเอง → เลือกสวนได้ แต่ "ทีมตัด" ล็อกเป็นทีมตัวเอง
+    document.getElementById('uname').textContent = u.name;
+    document.getElementById('usub').textContent  = `${u.phone} · ${u.teamId || ''}`;
+    _fillGardens(g.gardens || []);
 
+    U.teamId = u.teamId || '';
+    const teamSel = document.getElementById('inp-team');
+    if (u.teamId) {
+      let exists = false;
+      for (let i = 0; i < teamSel.options.length; i++) {
+        if (teamSel.options[i].value === u.teamId) { exists = true; break; }
+      }
+      if (!exists) {
+        const o = document.createElement('option');
+        o.value = u.teamId; o.textContent = u.name;
+        teamSel.appendChild(o);
+      }
+      teamSel.value = u.teamId;
+      const chips = document.querySelectorAll('#team-chips .chip');
+      chips.forEach(c => c.classList.remove('on'));
+      chips[1].classList.add('on');
+      teamSel.classList.remove('hide');
+    }
+    document.getElementById('team-chips').style.pointerEvents = 'none';
+    document.getElementById('team-chips').style.opacity = '.55';
+    teamSel.classList.add('ro');
   } else {
     document.getElementById('uname').textContent = u.name || u.gardenName;
     document.getElementById('usub').textContent  = u.phone;
