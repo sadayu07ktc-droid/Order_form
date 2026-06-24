@@ -363,7 +363,7 @@ function _setup(u, g) {
       _fillPickups(myGarden.pickups || []);   // ✅ ใช้ pickups array
       // หลายจุด → RSPO default สวนไปก่อน (เปลี่ยนตอนเลือกจุด); จุดเดียว _fillPickups เซ็ตให้แล้ว
       if (!myGarden.pickups || myGarden.pickups.length !== 1) _setRspo(myGarden.rspo || 'ไม่มี');
-      _setTeam(myGarden.teamId || '');
+      _setTeamForGarden(myGarden.teamId || '');
     }
 
   } else if (u.role === 'Ramp') {
@@ -887,6 +887,34 @@ function _setTeam(teamId) {
     teamSel.classList.add('hide');
   }
 }
+// ✅ กรอง dropdown ทีมตัด ให้เหลือเฉพาะทีมของสวนนี้ (คอลัมน์ J คั่น comma) + เลือกตัวแรก
+function _setTeamForGarden(teamIdsStr) {
+  const chips   = document.querySelectorAll('#team-chips .chip');
+  const teamSel = document.getElementById('inp-team');
+  const ids = String(teamIdsStr || '').split(',').map(s => s.trim()).filter(Boolean);
+
+  if (!ids.length || (ids.length === 1 && ids[0] === 'ไม่มี')) {
+    _fillTeams(gData.teams || []);
+    chips.forEach(c => c.classList.remove('on')); chips[0].classList.add('on');
+    teamSel.classList.add('hide');
+    return;
+  }
+
+  const allTeams = gData.teams || [];
+  teamSel.innerHTML = '<option value="">-- เลือกทีม --</option>';
+  ids.forEach(id => {
+    const t = allTeams.find(x => x.id === id);
+    if (t) {
+      const o = document.createElement('option');
+      o.value = t.id; o.textContent = t.name;
+      teamSel.appendChild(o);
+    }
+  });
+
+  chips.forEach(c => c.classList.remove('on')); chips[1].classList.add('on');
+  teamSel.classList.remove('hide');
+  if (teamSel.options.length > 1) teamSel.selectedIndex = 1;
+}
 
 function onGardenChange() {
   const o = document.getElementById('inp-garden');
@@ -902,7 +930,7 @@ function onGardenChange() {
   // ถ้ามีหลายจุด → ยังไม่เลือก → RSPO ใช้ default ของสวนไปก่อน (จะเปลี่ยนตอนเลือกจุด)
   if (pickups.length !== 1) _setRspo(opt.dataset.rspo || 'ไม่มี');
 
-  _setTeam(opt.dataset.teamId || '');
+  _setTeamForGarden(opt.dataset.teamId || '');
 }
 
 // ── Chip Helpers ──────────────────────────────────────────
