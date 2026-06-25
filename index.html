@@ -156,9 +156,12 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
         <label>ทะเบียนรถ <span class="req">*</span></label>
         <div class="chips" id="plate-chips" style="margin-bottom:8px"></div>
         <select class="inp inp-admin hide" id="inp-plate-custom">
-          <option value="">-- เลือกทะเบียน --</option>
-        </select>
-      </div>
+      <option value="">-- เลือกทะเบียน --</option>
+    </select>
+    <select class="inp inp-admin hide" id="inp-child-plate" style="margin-top:8px">
+      <option value="">-- เลือกลูกคันอื่น --</option>
+    </select>
+  </div>
     </div>
   </div>
 
@@ -432,12 +435,15 @@ function _setup(u, g) {
 // ── Admin Data ────────────────────────────────────────────
 async function _loadAdminData(g) {
   try {
-    const [ordRes, drvRes] = await Promise.all([
+    const [ordRes, drvRes, childRes] = await Promise.all([
       fetch(`${GAS_URL}?action=getPendingOrders`).then(r => r.json()),
-      fetch(`${GAS_URL}?action=getAvailableDrivers`).then(r => r.json())
+      fetch(`${GAS_URL}?action=getAvailableDrivers`).then(r => r.json()),
+      fetch(`${GAS_URL}?action=getAvailableTrailerChildren`).then(r => r.json())
     ]);
     // ✅ เก็บ ramp UIDs ไว้เช็คตอน onAssignOrderChange
     window._rampUids = (g.ramps || []).map(r => r.uid).filter(Boolean);
+    // ✅ เก็บ "ลูกว่าง" ไว้ใช้ตอนเลือกชิป "แม่+ลูกคันอื่น"
+    window._freeChildren = childRes.children || [];
     _fillPendingOrders(ordRes.orders || []);
     _fillDrivers(drvRes.drivers || []);
     _fillAllPlates(drvRes.drivers || []);
@@ -699,25 +705,86 @@ function onDriverChange() {
   const info = document.getElementById('driver-info');
   const chipsEl = document.getElementById('plate-chips');
   const custSel = document.getElementById('inp-plate-custom');
+  const childSel = document.getElementById('inp-child-plate');
   custSel.classList.add('hide');
+  childSel.classList.add('hide');
   chipsEl.innerHTML = '';
+  chipsEl.removeAttribute('data-trailer');
+  chipsEl.removeAttribute('data-mother');
+  chipsEl.removeAttribute('data-own-child');
   if (!opt || !opt.value) { info.style.display = 'none'; return; }
   info.textContent = `📞 ${opt.dataset.phone || '—'} · 🚚 ${opt.dataset.type || '—'}`;
   info.style.display = 'block';
+
   const plates = (opt.dataset.plate || '').split(',').map(p => p.trim()).filter(Boolean);
-  plates.forEach((plate, i) => {
-    const c = document.createElement('span');
-    c.className = 'chip-admin' + (i === 0 ? ' on' : '');
-    c.textContent = plate;
-    c.onclick = () => pickPlate(c, false);
-    chipsEl.appendChild(c);
+  const isTrailer = plates.length >= 2;   // มี comma = พ่วง/CPO (แม่,ลูก)
+
+  if (isTrailer) {
+    const mother   = plates[0];
+    const ownChild = plates[1];
+    chipsEl.dataset.trailer  = '1';
+    chipsEl.dataset.mother   = mother;
+    chipsEl.dataset.ownChild = ownChild;
+
+    const mk = (txt, mode, on) => {
+      const c = document.createElement('span');
+      c.className = 'chip-admin' + (on ? ' on' : '');
+      c.textContent = txt;
+      c.dataset.mode = mode;
+      c.onclick = () => pickPlateMode(c, mode);
+      chipsEl.appendChild(c);
+    };
+    mk(`🔗 แม่+ลูก (${mother},${ownChild})`, 'pair', true);
+    mk(`🚚 เฉพาะแม่ (${mother})`, 'mother', false);
+    mk('🔄 แม่+ลูกคันอื่น', 'otherChild', false);
+
+    _fillChildOptions(ownChild);   // เติม dropdown ลูกว่าง (ตัดลูกของตัวเองออก)
+
+  } else {
+    chipsEl.dataset.trailer = '0';
+    plates.forEach((plate, i) => {
+      const c = document.createElement('span');
+      c.className = 'chip-admin' + (i === 0 ? ' on' : '');
+      c.textContent = plate;
+      c.dataset.mode = 'plain';
+      c.onclick = () => pickPlate(c, false);
+      chipsEl.appendChild(c);
+    });
+    const cOther = document.createElement('span');
+    cOther.className = 'chip-admin';
+    cOther.textContent = 'ระบุเอง';
+    cOther.dataset.mode = 'custom';
+    cOther.onclick = () => pickPlate(cOther, true);
+    chipsEl.appendChild(cOther);
+    if (plates.length === 0) { cOther.classList.add('on'); custSel.classList.remove('hide'); }
+  }
+}
+
+// ลูก/หางที่ว่าง → เติม dropdown (ตัดลูกของคนขับเองออก เพราะอยู่ในชิป "แม่+ลูก" แล้ว)
+function _fillChildOptions(excludeChild) {
+  const childSel = document.getElementById('inp-child-plate');
+  childSel.innerHTML = '<option value="">-- เลือกลูกคันอื่น --</option>';
+  (window._freeChildren || []).forEach(c => {
+    if (c.child === excludeChild) return;
+    const o = document.createElement('option');
+    o.value = c.child;
+    o.textContent = `${c.child} (${c.ownerName || '—'})`;
+    childSel.appendChild(o);
   });
-  const cOther = document.createElement('span');
-  cOther.className = 'chip-admin';
-  cOther.textContent = 'ระบุเอง';
-  cOther.onclick = () => pickPlate(cOther, true);
-  chipsEl.appendChild(cOther);
-  if (plates.length === 0) { cOther.classList.add('on'); custSel.classList.remove('hide'); }
+}
+
+// คนขับธรรมดา (4/6/10 ล้อ)
+function pickPlate(el, showCustom) {
+  document.querySelectorAll('#plate-chips .chip-admin').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('inp-plate-custom').classList.toggle('hide', !showCustom);
+}
+
+// คนขับพ่วง/CPO → สลับโหมด แม่+ลูก / เฉพาะแม่ / แม่+ลูกคันอื่น
+function pickPlateMode(el, mode) {
+  document.querySelectorAll('#plate-chips .chip-admin').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('inp-child-plate').classList.toggle('hide', mode !== 'otherChild');
 }
 
 function pickPlate(el, showCustom) {
@@ -971,10 +1038,27 @@ function _getAdminFields() {
   if (userRole !== 'Admin') return {};
   const ordSel = document.getElementById('inp-assign-order');
   const drvSel = document.getElementById('inp-driver');
-  const plateChipOn = document.querySelector('#plate-chips .chip-admin.on');
+  const chipsEl = document.getElementById('plate-chips');
+  const chipOn  = document.querySelector('#plate-chips .chip-admin.on');
   let plate = '';
-  if (plateChipOn && plateChipOn.textContent !== 'ระบุเอง') plate = plateChipOn.textContent.trim();
-  else plate = document.getElementById('inp-plate-custom').value;
+
+  if (chipsEl.dataset.trailer === '1') {
+    const mother   = chipsEl.dataset.mother   || '';
+    const ownChild = chipsEl.dataset.ownChild || '';
+    const mode = chipOn ? chipOn.dataset.mode : 'pair';
+    if (mode === 'mother') {
+      plate = mother;                                  // ไปแต่หัว
+    } else if (mode === 'otherChild') {
+      const child = document.getElementById('inp-child-plate').value;
+      plate = child ? `${mother},${child}` : '';       // ไม่เลือกลูก → ปล่อยว่างให้ validation จับ
+    } else {
+      plate = `${mother},${ownChild}`;                 // แม่+ลูกของตัวเอง
+    }
+  } else {
+    if (chipOn && chipOn.dataset.mode !== 'custom') plate = chipOn.textContent.trim();
+    else plate = document.getElementById('inp-plate-custom').value;
+  }
+
   return {
     assignOrderId : ordSel.value || '',
     driverUid     : dispatchMode === 'assign' ? (drvSel.value || '') : '',
