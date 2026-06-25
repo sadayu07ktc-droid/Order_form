@@ -786,13 +786,6 @@ function pickPlateMode(el, mode) {
   el.classList.add('on');
   document.getElementById('inp-child-plate').classList.toggle('hide', mode !== 'otherChild');
 }
-
-function pickPlate(el, showCustom) {
-  document.querySelectorAll('#plate-chips .chip-admin').forEach(c => c.classList.remove('on'));
-  el.classList.add('on');
-  document.getElementById('inp-plate-custom').classList.toggle('hide', !showCustom);
-}
-
 // ── Dispatch Mode ─────────────────────────────────────────
 let dispatchMode = 'flex';
 
