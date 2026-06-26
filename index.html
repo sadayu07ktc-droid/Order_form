@@ -82,6 +82,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .goods-row-title{font-size:11px;font-weight:700;color:var(--green-d)}
 .btn-remove{background:#FEE2E2;color:var(--red);border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Sarabun',sans-serif}
 .btn-add{background:var(--green-l);color:var(--green-d);border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;width:100%;margin-top:4px}
+.borrow-note{font-size:10px;color:var(--indigo);background:rgba(79,70,229,.06);border-radius:6px;padding:6px 9px;margin-top:6px;display:none}
 .ts-control{background:var(--cream)!important;border:.5px solid var(--border)!important;border-radius:9px!important;padding:10px 12px!important;font-size:14px;font-family:'Sarabun',sans-serif;color:var(--text);min-height:auto!important}
 .ts-control:focus-within{border-color:var(--green)!important;box-shadow:none!important}
 .ts-wrapper.single .ts-control{background:var(--cream)!important}
@@ -156,12 +157,19 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
         <label>ทะเบียนรถ <span class="req">*</span></label>
         <div class="chips" id="plate-chips" style="margin-bottom:8px"></div>
         <select class="inp inp-admin hide" id="inp-plate-custom">
-      <option value="">-- เลือกทะเบียน --</option>
-    </select>
-    <select class="inp inp-admin hide" id="inp-child-plate" style="margin-top:8px">
-      <option value="">-- เลือกลูกคันอื่น --</option>
-    </select>
-  </div>
+          <option value="">-- เลือกทะเบียน --</option>
+        </select>
+        <select class="inp inp-admin hide" id="inp-child-plate" style="margin-top:8px">
+          <option value="">-- เลือกลูกคันอื่น --</option>
+        </select>
+        <select class="inp inp-admin hide" id="inp-borrow-type" style="margin-top:8px" onchange="onBorrowTypeChange()">
+          <option value="">-- เลือกประเภทรถที่ยืม --</option>
+        </select>
+        <select class="inp inp-admin hide" id="inp-borrow-vehicle" style="margin-top:8px">
+          <option value="">-- เลือกคันที่ยืม --</option>
+        </select>
+        <div class="borrow-note" id="borrow-note">🔄 ยืมรถคันอื่น — GPS/ลงเวลาจะอ้างทะเบียนคันนี้</div>
+      </div>
     </div>
   </div>
 
@@ -329,8 +337,6 @@ async function init() {
     filterTime('inp-date', 'inp-time');
     filterTime('inp-date-o', 'inp-time-o');
 
-    // (unit-other handled per goods row now)
-
     const [uRes, gRes] = await Promise.all([
       fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`).then(r => r.json()),
       fetch(`${GAS_URL}?action=getGardenData&userId=${p.userId}`).then(r => r.json())
@@ -372,8 +378,7 @@ function _setup(u, g) {
     const myGarden = g.gardens.find(x => x.id === u.gardenId);
     if (myGarden) {
       _fillBills(u.billNames || []);
-      _fillPickups(myGarden.pickups || []);   // ✅ ใช้ pickups array
-      // หลายจุด → RSPO default สวนไปก่อน (เปลี่ยนตอนเลือกจุด); จุดเดียว _fillPickups เซ็ตให้แล้ว
+      _fillPickups(myGarden.pickups || []);
       if (!myGarden.pickups || myGarden.pickups.length !== 1) _setRspo(myGarden.rspo || 'ไม่มี');
       _setTeamForGarden(myGarden.teamId || '');
     }
@@ -397,7 +402,6 @@ function _setup(u, g) {
     _initGardenSearch();
     _loadAdminData(g);
   } else if (u.role === 'Team') {
-    // ทีมตัดสั่งเอง → เลือกสวนได้ แต่ "ทีมตัด" ล็อกเป็นทีมตัวเอง
     document.getElementById('uname').textContent = u.name;
     document.getElementById('usub').textContent  = `${u.phone} · ${u.teamId || ''}`;
     _fillGardens(g.gardens || []);
@@ -435,21 +439,19 @@ function _setup(u, g) {
 // ── Admin Data ────────────────────────────────────────────
 async function _loadAdminData(g) {
   try {
-    const [ordRes, drvRes, childRes] = await Promise.all([
+    const [ordRes, drvRes, childRes, vehRes] = await Promise.all([
       fetch(`${GAS_URL}?action=getPendingOrders`).then(r => r.json()),
       fetch(`${GAS_URL}?action=getAvailableDrivers`).then(r => r.json()),
-      fetch(`${GAS_URL}?action=getAvailableTrailerChildren`).then(r => r.json())
+      fetch(`${GAS_URL}?action=getAvailableTrailerChildren`).then(r => r.json()),
+      fetch(`${GAS_URL}?action=getAvailableVehicles`).then(r => r.json())
     ]);
-    // ✅ เก็บ ramp UIDs ไว้เช็คตอน onAssignOrderChange
-    window._rampUids = (g.ramps || []).map(r => r.uid).filter(Boolean);
-    // ✅ เก็บ "ลูกว่าง" ไว้ใช้ตอนเลือกชิป "แม่+ลูกคันอื่น"
+    window._rampUids     = (g.ramps || []).map(r => r.uid).filter(Boolean);
     window._freeChildren = childRes.children || [];
+    window._vehicleGroups = vehRes.groups || [];   // ✅ รถว่างทุกประเภท (สำหรับยืมรถคันอื่น)
     _fillPendingOrders(ordRes.orders || []);
     _fillDrivers(drvRes.drivers || []);
     _fillAllPlates(drvRes.drivers || []);
     _fillDestinations(g);
-
-    // ✅ ถ้ามี ?orderId= จาก URL (มาจากการ์ด timeout / Notify / Status) → เลือกออเดอร์นั้นอัตโนมัติ
     _applyPresetOrderId();
   } catch(e) { console.error('Admin data load error:', e); }
 }
@@ -541,7 +543,6 @@ function _fillPendingOrders(orders) {
     el.dataset.time       = o.time       || '';
     el.dataset.pickup     = o.pickup     || '';
     el.dataset.billName   = o.billName   || '';
-    // ✅ เพิ่ม
     el.dataset.ownerUid  = o.ownerUid   || '';
     el.dataset.binCount  = o.binCount   || 1;
     el.dataset.note      = o.note       || '';
@@ -555,13 +556,11 @@ function _applyPresetOrderId() {
   if (!presetId) return;
 
   const sel = document.getElementById('inp-assign-order');
-  // หา option ที่ตรงกับ orderId (เผื่อ split order เช่น xxx-1 ก็ลอง match ตัวเต็มก่อน)
   let matched = false;
   for (let i = 0; i < sel.options.length; i++) {
     if (sel.options[i].value === presetId) { sel.selectedIndex = i; matched = true; break; }
   }
   if (!matched) {
-    // ลอง match แบบขึ้นต้น (กรณีส่ง base id มาแต่ option เป็น xxx-1)
     for (let i = 0; i < sel.options.length; i++) {
       if (sel.options[i].value && sel.options[i].value.indexOf(presetId) === 0) {
         sel.selectedIndex = i; matched = true; break;
@@ -570,14 +569,11 @@ function _applyPresetOrderId() {
   }
 
   if (matched) {
-    onAssignOrderChange();              // prefill ฟอร์มจากออเดอร์เดิม
-    // default เป็น "ระบุคนขับ" เพราะมาจากปุ่ม "หาคนขับเอง"
+    onAssignOrderChange();
     const assignChip = document.querySelector('#dispatch-chips .chip-admin:nth-child(2)');
     if (assignChip) pickDispatch(assignChip, 'assign');
-    // เลื่อนไปการ์ดจัดการออเดอร์ให้เห็นชัด
     document.getElementById('card-assign').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } else {
-    // ไม่เจอใน list (ออเดอร์อาจไม่ pending แล้ว) → แจ้งเตือนเบา ๆ
     const badge = document.getElementById('prefill-badge');
     badge.textContent = '⚠️ ไม่พบออเดอร์ ' + presetId + ' ใน list (อาจถูกจัดการไปแล้ว)';
     badge.classList.remove('hide');
@@ -596,14 +592,12 @@ function onAssignOrderChange() {
   const ownerUid  = opt.dataset.ownerUid || '';
   const isRampOrd = window._rampUids && window._rampUids.includes(ownerUid);
   if (currentJobType === 'ปาล์ม') {
-    // วันที่/เวลา
     if (opt.dataset.date) {
       document.getElementById('inp-date').value = opt.dataset.date;
       filterTime('inp-date', 'inp-time');
       setTimeout(() => { document.getElementById('inp-time').value = opt.dataset.time; }, 50);
     }
     if (isRampOrd) {
-      // ออเดอร์จากลานเท → ล็อก bill + detail
       document.getElementById('lk-bill').classList.remove('hide');
       document.getElementById('inner-bill').classList.add('locked');
       document.getElementById('lk-detail').classList.remove('hide');
@@ -611,7 +605,6 @@ function onAssignOrderChange() {
       U.gardenId   = opt.dataset.gardenId;
       U.gardenName = opt.dataset.gardenName;
     } else {
-      // ออเดอร์ปกติ → prefill สวน/จุดรับ/บิล
       _unlockOrderForm();
       if (opt.dataset.gardenId) {
         const gardenSel = document.getElementById('inp-garden');
@@ -624,7 +617,7 @@ function onAssignOrderChange() {
           for (let i = 0; i < pkSel.options.length; i++) {
             if (pkSel.options[i].value === opt.dataset.pickup) {
               pkSel.selectedIndex = i;
-              onPickupChange();   // ✅ อัปเดต RSPO ตามจุดที่ prefill
+              onPickupChange();
               break;
             }
           }
@@ -635,9 +628,7 @@ function onAssignOrderChange() {
         }, 100);
       }
     }
-    // กระบะ
     _prefillBinCount(parseInt(opt.dataset.binCount) || 1);
-    // หมายเหตุ
     if (opt.dataset.note) document.getElementById('inp-note').value = opt.dataset.note;
   }
 }
@@ -708,6 +699,9 @@ function onDriverChange() {
   const childSel = document.getElementById('inp-child-plate');
   custSel.classList.add('hide');
   childSel.classList.add('hide');
+  document.getElementById('inp-borrow-type').classList.add('hide');
+  document.getElementById('inp-borrow-vehicle').classList.add('hide');
+  document.getElementById('borrow-note').style.display = 'none';
   chipsEl.innerHTML = '';
   chipsEl.removeAttribute('data-trailer');
   chipsEl.removeAttribute('data-mother');
@@ -737,30 +731,40 @@ function onDriverChange() {
     mk(`🔗 แม่+ลูก (${mother},${ownChild})`, 'pair', true);
     mk(`🚚 เฉพาะแม่ (${mother})`, 'mother', false);
     mk('🔄 แม่+ลูกคันอื่น', 'otherChild', false);
+    mk('🔄 ยืมรถคันอื่น', 'borrow', false);
 
-    _fillChildOptions(ownChild);   // เติม dropdown ลูกว่าง (ตัดลูกของตัวเองออก)
+    _fillChildOptions(ownChild);
 
   } else {
     chipsEl.dataset.trailer = '0';
     plates.forEach((plate, i) => {
       const c = document.createElement('span');
       c.className = 'chip-admin' + (i === 0 ? ' on' : '');
-      c.textContent = plate;
+      c.textContent = plate + ' (รถตัวเอง)';
       c.dataset.mode = 'plain';
-      c.onclick = () => pickPlate(c, false);
+      c.dataset.plateValue = plate;
+      c.onclick = () => pickPlateMode(c, 'plain');
       chipsEl.appendChild(c);
     });
-    const cOther = document.createElement('span');
-    cOther.className = 'chip-admin';
-    cOther.textContent = 'ระบุเอง';
-    cOther.dataset.mode = 'custom';
-    cOther.onclick = () => pickPlate(cOther, true);
-    chipsEl.appendChild(cOther);
-    if (plates.length === 0) { cOther.classList.add('on'); custSel.classList.remove('hide'); }
+    const cBorrow = document.createElement('span');
+    cBorrow.className = 'chip-admin';
+    cBorrow.textContent = '🔄 ยืมรถคันอื่น';
+    cBorrow.dataset.mode = 'borrow';
+    cBorrow.onclick = () => pickPlateMode(cBorrow, 'borrow');
+    chipsEl.appendChild(cBorrow);
+
+    const cCustom = document.createElement('span');
+    cCustom.className = 'chip-admin';
+    cCustom.textContent = 'ระบุเอง';
+    cCustom.dataset.mode = 'custom';
+    cCustom.onclick = () => pickPlateMode(cCustom, 'custom');
+    chipsEl.appendChild(cCustom);
+
+    if (plates.length === 0) { cCustom.classList.add('on'); custSel.classList.remove('hide'); }
   }
 }
 
-// ลูก/หางที่ว่าง → เติม dropdown (ตัดลูกของคนขับเองออก เพราะอยู่ในชิป "แม่+ลูก" แล้ว)
+// ลูก/หางที่ว่าง → เติม dropdown (ตัดลูกของคนขับเองออก)
 function _fillChildOptions(excludeChild) {
   const childSel = document.getElementById('inp-child-plate');
   childSel.innerHTML = '<option value="">-- เลือกลูกคันอื่น --</option>';
@@ -773,19 +777,64 @@ function _fillChildOptions(excludeChild) {
   });
 }
 
-// คนขับธรรมดา (4/6/10 ล้อ)
+// ── เติม dropdown ประเภทรถ (ชั้น 1 ของ "ยืมรถคันอื่น") ──
+function _fillBorrowTypes() {
+  const typeSel = document.getElementById('inp-borrow-type');
+  typeSel.innerHTML = '<option value="">-- เลือกประเภทรถที่ยืม --</option>';
+  (window._vehicleGroups || []).forEach(grp => {
+    const o = document.createElement('option');
+    o.value = grp.type;
+    o.textContent = `${grp.type} (ว่าง ${grp.vehicles.length} คัน)`;
+    typeSel.appendChild(o);
+  });
+}
+
+// ── เลือกประเภท → เติม dropdown คัน (ชั้น 2) ──
+function onBorrowTypeChange() {
+  const type = document.getElementById('inp-borrow-type').value;
+  const vehSel = document.getElementById('inp-borrow-vehicle');
+  vehSel.innerHTML = '<option value="">-- เลือกคันที่ยืม --</option>';
+  if (!type) { vehSel.classList.add('hide'); return; }
+  const grp = (window._vehicleGroups || []).find(g => g.type === type);
+  if (!grp) { vehSel.classList.add('hide'); return; }
+  grp.vehicles.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.plate;   // อาจเป็น "หัว,ลูก" สำหรับพ่วง/CPO
+    o.textContent = `${v.plate} (${v.ownerName || '—'} - ${v.status})`;
+    vehSel.appendChild(o);
+  });
+  vehSel.classList.remove('hide');
+}
+
+// คนขับธรรมดา (4/6/10 ล้อ) — เลือกชิป
 function pickPlate(el, showCustom) {
   document.querySelectorAll('#plate-chips .chip-admin').forEach(c => c.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('inp-plate-custom').classList.toggle('hide', !showCustom);
 }
 
-// คนขับพ่วง/CPO → สลับโหมด แม่+ลูก / เฉพาะแม่ / แม่+ลูกคันอื่น
+// สลับโหมดทะเบียน (ครอบคลุมทั้งพ่วงและรถเดี่ยว)
+// pair / mother / otherChild / borrow / plain / custom
 function pickPlateMode(el, mode) {
   document.querySelectorAll('#plate-chips .chip-admin').forEach(c => c.classList.remove('on'));
   el.classList.add('on');
+
+  // ลูกคันอื่น (เฉพาะพ่วง)
   document.getElementById('inp-child-plate').classList.toggle('hide', mode !== 'otherChild');
+  // ระบุทะเบียนเอง (เฉพาะรถเดี่ยว)
+  document.getElementById('inp-plate-custom').classList.toggle('hide', mode !== 'custom');
+
+  // ยืมรถคันอื่น → โชว์ dropdown 2 ชั้น
+  const isBorrow = (mode === 'borrow');
+  document.getElementById('inp-borrow-type').classList.toggle('hide', !isBorrow);
+  document.getElementById('borrow-note').style.display = isBorrow ? 'block' : 'none';
+  if (isBorrow) {
+    _fillBorrowTypes();
+  } else {
+    document.getElementById('inp-borrow-vehicle').classList.add('hide');
+  }
 }
+
 // ── Dispatch Mode ─────────────────────────────────────────
 let dispatchMode = 'flex';
 
@@ -891,7 +940,7 @@ function _fillGardens(gs) {
     const o = document.createElement('option');
     o.value = g.id; o.textContent = g.name;
     o.dataset.bills    = JSON.stringify(g.billNames || []);
-    o.dataset.pickups  = JSON.stringify(g.pickups || []);   // ✅ จุดรับ array (name/rspo/location)
+    o.dataset.pickups  = JSON.stringify(g.pickups || []);
     o.dataset.location = g.location    || '';
     o.dataset.rspo     = g.rspo        || 'ไม่มี';
     o.dataset.teamId   = g.teamId      || '';
@@ -924,11 +973,10 @@ function _fillPickups(pickups) {
   (pickups || []).forEach(p => {
     const o = document.createElement('option');
     o.value = o.textContent = p.name;
-    o.dataset.rspo = p.rspo || 'ไม่มี';        // ✅ เก็บ RSPO ของจุดนี้
+    o.dataset.rspo = p.rspo || 'ไม่มี';
     o.dataset.location = p.location || '';
     sel.appendChild(o);
   });
-  // มีจุดเดียว → เลือกให้เลย + เซ็ต RSPO ตามจุดนั้น
   if (pickups && pickups.length === 1) {
     sel.selectedIndex = 1;
     _setRspo(pickups[0].rspo || 'ไม่มี');
@@ -970,7 +1018,7 @@ function _setTeam(teamId) {
     teamSel.classList.add('hide');
   }
 }
-// ✅ กรอง dropdown ทีมตัด ให้เหลือเฉพาะทีมของสวนนี้ (คอลัมน์ J คั่น comma) + เลือกตัวแรก
+// ✅ กรอง dropdown ทีมตัด ให้เหลือเฉพาะทีมของสวนนี้ + เลือกตัวแรก
 function _setTeamForGarden(teamIdsStr) {
   const chips   = document.querySelectorAll('#team-chips .chip');
   const teamSel = document.getElementById('inp-team');
@@ -1006,11 +1054,9 @@ function onGardenChange() {
   U.gardenId = opt.value; U.gardenName = opt.textContent;
   _fillBills(JSON.parse(opt.dataset.bills || '[]'));
 
-  // ✅ จุดรับจาก array (LOG_Pickup หรือ fallback ชื่อสวน)
   const pickups = JSON.parse(opt.dataset.pickups || '[]');
   _fillPickups(pickups);
 
-  // ถ้ามีหลายจุด → ยังไม่เลือก → RSPO ใช้ default ของสวนไปก่อน (จะเปลี่ยนตอนเลือกจุด)
   if (pickups.length !== 1) _setRspo(opt.dataset.rspo || 'ไม่มี');
 
   _setTeamForGarden(opt.dataset.teamId || '');
@@ -1033,23 +1079,30 @@ function _getAdminFields() {
   const drvSel = document.getElementById('inp-driver');
   const chipsEl = document.getElementById('plate-chips');
   const chipOn  = document.querySelector('#plate-chips .chip-admin.on');
+  const mode = chipOn ? chipOn.dataset.mode : '';
   let plate = '';
 
-  if (chipsEl.dataset.trailer === '1') {
+  if (mode === 'borrow') {
+    // ยืมรถคันอื่น — ทะเบียนจากคันที่เลือก (อาจเป็น "หัว,ลูก")
+    plate = document.getElementById('inp-borrow-vehicle').value || '';
+  } else if (chipsEl.dataset.trailer === '1') {
     const mother   = chipsEl.dataset.mother   || '';
     const ownChild = chipsEl.dataset.ownChild || '';
-    const mode = chipOn ? chipOn.dataset.mode : 'pair';
     if (mode === 'mother') {
       plate = mother;                                  // ไปแต่หัว
     } else if (mode === 'otherChild') {
       const child = document.getElementById('inp-child-plate').value;
-      plate = child ? `${mother},${child}` : '';       // ไม่เลือกลูก → ปล่อยว่างให้ validation จับ
+      plate = child ? `${mother},${child}` : '';       // แม่ + ลูกคันอื่น
     } else {
-      plate = `${mother},${ownChild}`;                 // แม่+ลูกของตัวเอง
+      plate = `${mother},${ownChild}`;                 // แม่+ลูกตัวเอง
     }
   } else {
-    if (chipOn && chipOn.dataset.mode !== 'custom') plate = chipOn.textContent.trim();
-    else plate = document.getElementById('inp-plate-custom').value;
+    // รถเดี่ยว
+    if (mode === 'custom') {
+      plate = document.getElementById('inp-plate-custom').value;
+    } else if (chipOn) {
+      plate = chipOn.dataset.plateValue || chipOn.textContent.replace('(รถตัวเอง)', '').trim();
+    }
   }
 
   return {
@@ -1071,7 +1124,7 @@ async function submitForm() {
     const af = _getAdminFields();
     if (af.dispatchMode === 'assign') {
       if (!af.driverUid) { alert('กรุณาเลือกคนขับครับ'); return; }
-      if (!af.plate)     { alert('กรุณาระบุทะเบียนรถครับ'); return; }
+      if (!af.plate)     { alert('กรุณาระบุทะเบียนรถครับ (ถ้ายืมรถคันอื่น ให้เลือกประเภท + คันให้ครบ)'); return; }
     }
   }
 
@@ -1127,7 +1180,6 @@ async function submitForm() {
 
     const destData = JSON.parse(destOpt.value);
 
-    // สรุปรายการสินค้าทั้งหมดรวมเป็นหมายเหตุ
     const itemsSummary = items.map(it => `${it.goodsType} จำนวน ${it.qty} ${it.unit}`).join(', ');
     const note = `สินค้า: ${itemsSummary}` +
                  (document.getElementById('inp-note-o').value ? ` | ${document.getElementById('inp-note-o').value}` : '');
