@@ -23,6 +23,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .hdr-logo{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px}
 .hdr h1{font-size:17px;font-weight:600;color:#fff;margin:0}
 .hdr p{font-size:11px;color:var(--green-l);margin:2px 0 0}
+.btn-back{margin-left:auto;background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:999px;padding:8px 13px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
+.btn-back:active{opacity:.8}
 .body{padding:14px;max-width:480px;margin:0 auto}
 .user-card{border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .uc-g{background:var(--green-l);border:.5px solid var(--border)}
@@ -103,6 +105,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 <div class="hdr">
   <div class="hdr-logo">🌴</div>
   <div><h1>แจ้งรับงานขนส่ง</h1><p>SSB Smart Supply</p></div>
+  <button id="back-dash" class="btn-back hide" onclick="goBackToDashboard()">‹ SSB Dashboard</button>
 </div>
 
 <div class="body">
@@ -295,6 +298,15 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec';
 const LIFF_ID = '2010274217-BF41B8c2';
+const DASHBOARD_URL = 'https://liff.line.me/2010274217-Ot7vGhri';   // SSB Dashboard (LIFF_ID_ADMIN)
+
+function goBackToDashboard(){
+  if(DASHBOARD_URL){ window.location.href = DASHBOARD_URL; return; }
+  if(window.history.length > 1){ window.history.back(); return; }
+  try{ if(window.liff && liff.isInClient && liff.isInClient()){ liff.closeWindow(); return; } }catch(e){}
+  window.history.back();
+}
+
 let U = {}, gData = {}, userRole = '';
 let currentJobType = 'ปาล์ม';
 let gardenTS = null;   // ✅ Tom Select instance ช่องสวน
@@ -396,6 +408,7 @@ function _setup(u, g) {
   } else if (u.role === 'Admin') {
     document.getElementById('uname').textContent = u.name || u.gardenName;
     document.getElementById('usub').textContent  = u.phone;
+    document.getElementById('back-dash').classList.remove('hide');   // ← ปุ่มกลับ Dashboard (เฉพาะ Admin)
     document.getElementById('h-admin').classList.remove('hide');
     document.getElementById('card-assign').classList.remove('hide');
     _fillGardens(g.gardens || []);
