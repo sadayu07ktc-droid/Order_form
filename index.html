@@ -482,6 +482,9 @@ const roleAvCls   = { Owner:'av-g', Team:'av-g', Ramp:'av-b', Admin:'av-i', ADMI
 const roleBgCls   = { Owner:'bg-g', Team:'bg-g', Ramp:'bg-b', Admin:'bg-i', ADMIN_PK:'bg-i' };
 
 function _setup(u, g) {
+  alert('ROLE ที่ฟอร์มได้รับ = ' + u.role);
+
+  
   U = { ...U, ...u };
   userRole = u.role;
 
