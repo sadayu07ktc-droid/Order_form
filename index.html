@@ -285,7 +285,112 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
       </div>
     </div>
   </div>
-
+  <!-- ── Packing Request Form ───────────────────────────── -->
+  <div id="form-packing" class="hide">
+  
+    <div class="card">
+      <div class="stitle">📦 คำขอใช้รถ Packing</div>
+  
+      <div class="fld">
+        <label>วันที่ต้องการ <span class="req">*</span></label>
+        <input class="inp" type="date" id="pk-date">
+      </div>
+  
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fld">
+          <label>เวลาโหลด <span class="req">*</span></label>
+          <input class="inp" type="time" id="pk-load-time">
+        </div>
+        <div class="fld">
+          <label>เวลาลงสินค้า</label>
+          <input class="inp" type="time" id="pk-unload-time">
+        </div>
+      </div>
+    </div>
+  
+    <div class="card">
+      <div class="stitle">🏢 ลูกค้า / จุดส่ง</div>
+  
+      <div class="fld">
+        <label>ลูกค้า <span class="req">*</span></label>
+        <select class="inp" id="pk-customer" onchange="onPkCustomerChange()">
+          <option value="">-- เลือกลูกค้า --</option>
+        </select>
+      </div>
+  
+      <div class="fld" style="margin:0">
+        <label>จุดส่ง / สถานที่ส่ง <span class="req">*</span></label>
+        <select class="inp" id="pk-destination">
+          <option value="">-- เลือกจุดส่ง --</option>
+        </select>
+      </div>
+    </div>
+  
+    <div class="card">
+      <div class="stitle">🚛 รถที่ต้องการ</div>
+  
+      <div class="fld">
+        <label>ประเภทรถที่ต้องการ <span class="req">*</span></label>
+        <select class="inp" id="pk-vehicle-type">
+          <option value="">-- เลือกประเภทรถ --</option>
+        </select>
+      </div>
+  
+      <div class="fld" style="margin:0">
+        <label>จำนวนรถ <span class="req">*</span></label>
+        <input class="inp" type="number" id="pk-vehicle-count" min="1" value="1">
+      </div>
+    </div>
+  
+    <div class="card">
+      <div class="stitle">📦 รายการสินค้า</div>
+  
+      <div class="fld">
+        <label>สินค้า <span class="req">*</span></label>
+        <select class="inp" id="pk-product" onchange="onPkProductChange()">
+          <option value="">-- เลือกสินค้า --</option>
+        </select>
+      </div>
+  
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fld">
+          <label>จำนวนสินค้า <span class="req">*</span></label>
+          <input class="inp" type="number" id="pk-qty" min="0" step="0.01" placeholder="เช่น 100">
+        </div>
+        <div class="fld">
+          <label>หน่วย <span class="req">*</span></label>
+          <input class="inp" id="pk-unit" placeholder="เช่น ลัง">
+        </div>
+      </div>
+    </div>
+  
+    <div class="card">
+      <div class="stitle">👷 ค่าลงสินค้า / เด็กยก</div>
+  
+      <div class="fld">
+        <label>ค่าลงสินค้า</label>
+        <input class="inp" type="number" id="pk-unload-cost" min="0" step="0.01" placeholder="เช่น 1000">
+      </div>
+  
+      <div class="fld">
+        <label>ชื่อเด็กยก</label>
+        <input class="inp" id="pk-helper-name" placeholder="ระบุชื่อ หรือเว้นว่าง">
+      </div>
+  
+      <div class="fld" style="margin:0">
+        <label>เวลานัดเด็กยก</label>
+        <input class="inp" type="time" id="pk-helper-time">
+      </div>
+    </div>
+  
+    <div class="card">
+      <div class="stitle">📝 หมายเหตุ</div>
+      <div class="fld" style="margin:0">
+        <textarea class="inp" id="pk-note" rows="2" placeholder="รายละเอียดเพิ่มเติม เช่น เงื่อนไขลงสินค้า / เบอร์ติดต่อ / จุดนัด"></textarea>
+      </div>
+    </div>
+  
+  </div>
   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
     <span style="font-size:13px;color:var(--text-m)">สถานะเริ่มต้น</span>
     <span class="stat-pill">⏳ รอยืนยัน</span>
@@ -309,6 +414,12 @@ function goBackToDashboard(){
 
 let U = {}, gData = {}, userRole = '';
 let currentJobType = 'ปาล์ม';
+let pkMaster = {
+  customers: [],
+  destinations: [],
+  products: [],
+  vehicleTypes: []
+};
 let gardenTS = null;   // ✅ Tom Select instance ช่องสวน
 
 // ── Filter Time ───────────────────────────────────────────
@@ -364,11 +475,11 @@ async function init() {
 }
 
 // ── Setup UI ──────────────────────────────────────────────
-const roleLabel   = { Owner:'เจ้าของสวน', Team:'ทีมตัด', Ramp:'ลานเท', Driver:'คนขับ', Admin:'Admin' };
-const roleIcon    = { Owner:'🌳', Team:'🌿', Ramp:'🏭', Admin:'⚙️' };
-const roleCardCls = { Owner:'uc-g', Team:'uc-g', Ramp:'uc-b', Admin:'uc-i' };
-const roleAvCls   = { Owner:'av-g', Team:'av-g', Ramp:'av-b', Admin:'av-i' };
-const roleBgCls   = { Owner:'bg-g', Team:'bg-g', Ramp:'bg-b', Admin:'bg-i' };
+const roleLabel   = { Owner:'เจ้าของสวน', Team:'ทีมตัด', Ramp:'ลานเท', Driver:'คนขับ', Admin:'Admin', ADMIN_PK:'Packing' };
+const roleIcon    = { Owner:'🌳', Team:'🌿', Ramp:'🏭', Admin:'⚙️', ADMIN_PK:'📦' };
+const roleCardCls = { Owner:'uc-g', Team:'uc-g', Ramp:'uc-b', Admin:'uc-i', ADMIN_PK:'uc-i' };
+const roleAvCls   = { Owner:'av-g', Team:'av-g', Ramp:'av-b', Admin:'av-i', ADMIN_PK:'av-i' };
+const roleBgCls   = { Owner:'bg-g', Team:'bg-g', Ramp:'bg-b', Admin:'bg-i', ADMIN_PK:'bg-i' };
 
 function _setup(u, g) {
   U = { ...U, ...u };
@@ -404,7 +515,13 @@ function _setup(u, g) {
     document.getElementById('inner-bill').classList.add('locked');
     document.getElementById('lk-detail').classList.remove('hide');
     document.getElementById('inner-detail').classList.add('locked');
+    
+  } else if (u.role === 'ADMIN_PK') {
+    document.getElementById('uname').textContent = u.name || u.gardenName || 'Packing';
+    document.getElementById('usub').textContent  = u.phone || 'Packing Request';
 
+    setupPackingMode();
+    
   } else if (u.role === 'Admin') {
     document.getElementById('uname').textContent = u.name || u.gardenName;
     document.getElementById('usub').textContent  = u.phone;
@@ -1127,9 +1244,240 @@ function _getAdminFields() {
     dispatchMode  : dispatchMode
   };
 }
+// ── Packing Mode ──────────────────────────────────────────
+async function setupPackingMode() {
+  currentJobType = 'Packing';
 
+  // ซ่อนของเดิม
+  document.getElementById('h-admin')?.classList.add('hide');
+  document.getElementById('card-assign')?.classList.add('hide');
+  document.getElementById('form-palm')?.classList.add('hide');
+  document.getElementById('form-other')?.classList.add('hide');
+
+  // แสดงฟอร์ม Packing
+  document.getElementById('form-packing')?.classList.remove('hide');
+
+  // เปลี่ยนข้อความปุ่ม/สถานะ
+  const btn = document.getElementById('btn-sub');
+  if (btn) btn.textContent = '📤 ส่งคำขอรถ Packing';
+
+  const stat = document.querySelector('.stat-pill');
+  if (stat) stat.textContent = '⏳ รอแอดมินตรวจสอบ';
+
+  // ตั้งวันที่ขั้นต่ำ
+  const today = new Date().toISOString().split('T')[0];
+  const pkDate = document.getElementById('pk-date');
+  if (pkDate) pkDate.min = today;
+
+  await loadPkMasterData();
+}
+
+async function loadPkMasterData() {
+  try {
+    const res = await fetch(`${GAS_URL}?action=getPkMasterData&t=${Date.now()}`);
+    const data = await res.json();
+
+    if (!data || !data.ok) {
+      alert('โหลดฐานข้อมูล Packing ไม่สำเร็จ');
+      return;
+    }
+
+    pkMaster = data;
+
+    fillPkCustomers();
+    fillPkProducts();
+    fillPkVehicleTypes();
+
+  } catch (err) {
+    console.error(err);
+    alert('โหลดฐานข้อมูล Packing ไม่สำเร็จ');
+  }
+}
+
+function fillPkCustomers() {
+  const sel = document.getElementById('pk-customer');
+  if (!sel) return;
+
+  sel.innerHTML = '<option value="">-- เลือกลูกค้า --</option>';
+
+  (pkMaster.customers || []).forEach(c => {
+    const o = document.createElement('option');
+    o.value = c['Customer ID'] || '';
+    o.textContent = c['ชื่อลูกค้า'] || '';
+    o.dataset.name = c['ชื่อลูกค้า'] || '';
+    o.dataset.unloadCost = c['ค่าลงสินค้ามาตรฐาน'] || '';
+    sel.appendChild(o);
+  });
+}
+
+function fillPkProducts() {
+  const sel = document.getElementById('pk-product');
+  if (!sel) return;
+
+  sel.innerHTML = '<option value="">-- เลือกสินค้า --</option>';
+
+  (pkMaster.products || []).forEach(p => {
+    const o = document.createElement('option');
+    o.value = p['Product ID'] || '';
+    o.textContent = p['ชื่อสินค้า'] || '';
+    o.dataset.name = p['ชื่อสินค้า'] || '';
+    o.dataset.unit = p['หน่วยหลัก'] || '';
+    sel.appendChild(o);
+  });
+}
+
+function fillPkVehicleTypes() {
+  const sel = document.getElementById('pk-vehicle-type');
+  if (!sel) return;
+
+  sel.innerHTML = '<option value="">-- เลือกประเภทรถ --</option>';
+
+  (pkMaster.vehicleTypes || []).forEach(v => {
+    const o = document.createElement('option');
+    o.value = v['ประเภทรถ'] || '';
+    o.textContent = v['ประเภทรถ'] || '';
+    o.dataset.id = v['Vehicle Type ID'] || '';
+    sel.appendChild(o);
+  });
+}
+
+function onPkCustomerChange() {
+  const cSel = document.getElementById('pk-customer');
+  const dSel = document.getElementById('pk-destination');
+  if (!cSel || !dSel) return;
+
+  const customerId = cSel.value;
+  const opt = cSel.options[cSel.selectedIndex];
+
+  // auto ค่าลงสินค้ามาตรฐาน
+  const cost = opt?.dataset?.unloadCost || '';
+  if (cost) document.getElementById('pk-unload-cost').value = cost;
+
+  dSel.innerHTML = '<option value="">-- เลือกจุดส่ง --</option>';
+
+  (pkMaster.destinations || [])
+    .filter(d => String(d['Customer ID'] || '') === String(customerId || ''))
+    .forEach(d => {
+      const o = document.createElement('option');
+      o.value = d['Destination ID'] || d['ชื่อจุดส่ง'] || '';
+      o.textContent = d['ชื่อจุดส่ง'] || '';
+      o.dataset.name = d['ชื่อจุดส่ง'] || '';
+      o.dataset.customerId = d['Customer ID'] || '';
+      dSel.appendChild(o);
+    });
+
+  // ถ้ามีจุดส่งเดียว เลือกให้อัตโนมัติ
+  if (dSel.options.length === 2) dSel.selectedIndex = 1;
+}
+
+function onPkProductChange() {
+  const sel = document.getElementById('pk-product');
+  if (!sel) return;
+
+  const opt = sel.options[sel.selectedIndex];
+  const unit = opt?.dataset?.unit || '';
+  if (unit) document.getElementById('pk-unit').value = unit;
+}
+
+async function submitPackingForm() {
+  const date = document.getElementById('pk-date').value;
+  const loadTime = document.getElementById('pk-load-time').value;
+  const unloadTime = document.getElementById('pk-unload-time').value;
+
+  const customerSel = document.getElementById('pk-customer');
+  const customerOpt = customerSel.options[customerSel.selectedIndex];
+
+  const destSel = document.getElementById('pk-destination');
+  const destOpt = destSel.options[destSel.selectedIndex];
+
+  const vehicleType = document.getElementById('pk-vehicle-type').value;
+  const vehicleCount = document.getElementById('pk-vehicle-count').value;
+
+  const productSel = document.getElementById('pk-product');
+  const productOpt = productSel.options[productSel.selectedIndex];
+
+  const qty = document.getElementById('pk-qty').value;
+  const unit = document.getElementById('pk-unit').value;
+
+  if (!date) { alert('กรุณาเลือกวันที่ต้องการ'); return; }
+  if (!loadTime) { alert('กรุณาระบุเวลาโหลด'); return; }
+  if (!customerSel.value) { alert('กรุณาเลือกลูกค้า'); return; }
+  if (!destSel.value) { alert('กรุณาเลือกจุดส่ง'); return; }
+  if (!vehicleType) { alert('กรุณาเลือกประเภทรถที่ต้องการ'); return; }
+  if (!vehicleCount || Number(vehicleCount) <= 0) { alert('กรุณาระบุจำนวนรถ'); return; }
+  if (!productSel.value) { alert('กรุณาเลือกรายการสินค้า'); return; }
+  if (!qty || Number(qty) <= 0) { alert('กรุณาระบุจำนวนสินค้า'); return; }
+  if (!unit) { alert('กรุณาระบุหน่วย'); return; }
+
+  const payload = {
+    action: 'submitPkRequest',
+    userId: U.userId,
+
+    requestDate: date,
+    loadTime: loadTime,
+    unloadTime: unloadTime,
+
+    customerId: customerSel.value,
+    customerName: customerOpt?.dataset?.name || customerOpt?.textContent || '',
+
+    destinationId: destSel.value,
+    destinationName: destOpt?.dataset?.name || destOpt?.textContent || '',
+
+    vehicleType: vehicleType,
+    vehicleCount: vehicleCount,
+
+    items: [{
+      productId: productSel.value,
+      productName: productOpt?.dataset?.name || productOpt?.textContent || '',
+      qty: qty,
+      unit: unit
+    }],
+
+    unloadCost: document.getElementById('pk-unload-cost').value,
+    helperName: document.getElementById('pk-helper-name').value,
+    helperTime: document.getElementById('pk-helper-time').value,
+    note: document.getElementById('pk-note').value,
+
+    requesterName: U.name || U.gardenName || '',
+    userName: U.name || U.gardenName || ''
+  };
+
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('btn-sub').disabled = true;
+
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const r = await res.json();
+    document.getElementById('overlay').classList.remove('show');
+
+    if (r.success || r.ok) {
+      document.getElementById('success-msg').innerHTML =
+        `บันทึกคำขอ Packing <b>${r.requestId}</b> แล้วค่ะ<br>สถานะ: <b>รอแอดมินตรวจสอบ</b>`;
+      document.getElementById('success').classList.add('show');
+    } else {
+      alert('❌ ' + (r.error || 'บันทึกคำขอ Packing ไม่สำเร็จ'));
+      document.getElementById('btn-sub').disabled = false;
+    }
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('overlay').classList.remove('show');
+    alert('❌ ส่งข้อมูลไม่สำเร็จ');
+    document.getElementById('btn-sub').disabled = false;
+  }
+}
 // ── Submit ────────────────────────────────────────────────
 async function submitForm() {
+  if (userRole === 'ADMIN_PK') {
+    await submitPackingForm();
+    return;
+  }
+
   const isPalm  = currentJobType === 'ปาล์ม';
   const isAdmin = userRole === 'Admin';
 
