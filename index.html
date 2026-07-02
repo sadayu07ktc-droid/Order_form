@@ -1448,13 +1448,21 @@ async function submitPackingForm() {
   try {
     const res = await fetch(GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-
-    const r = await res.json();
+  
+    const text = await res.text();
+    console.log('PK RESPONSE TEXT =', text);
+  
+    let r;
+    try {
+      r = JSON.parse(text);
+    } catch (err) {
+      throw new Error('GAS ไม่ได้ตอบกลับเป็น JSON: ' + text);
+    }
+  
     document.getElementById('overlay').classList.remove('show');
-
+  
     if (r.success || r.ok) {
       document.getElementById('success-msg').innerHTML =
         `บันทึกคำขอ Packing <b>${r.requestId}</b> แล้วค่ะ<br>สถานะ: <b>รอแอดมินตรวจสอบ</b>`;
@@ -1463,11 +1471,11 @@ async function submitPackingForm() {
       alert('❌ ' + (r.error || 'บันทึกคำขอ Packing ไม่สำเร็จ'));
       document.getElementById('btn-sub').disabled = false;
     }
-
+  
   } catch (err) {
     console.error(err);
     document.getElementById('overlay').classList.remove('show');
-    alert('❌ ส่งข้อมูลไม่สำเร็จ');
+    alert('❌ ส่งข้อมูลไม่สำเร็จ\n\n' + (err.message || err));
     document.getElementById('btn-sub').disabled = false;
   }
 }
