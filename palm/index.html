@@ -186,6 +186,8 @@
   .pv-row.lost .v{color:var(--danger)}
   .pv-cycle{background:#fffdf8;border:1.5px solid var(--oil);border-radius:12px;padding:4px 14px 10px;margin-top:10px}
   .pv-cycle .cap{font-family:"Anuphan";font-weight:700;color:var(--oil-ink);padding:10px 0 2px;font-size:.95rem}
+  .pv-contnote{margin-top:10px;background:#eef4ee;border:1px dashed #bcdcc7;border-radius:8px;
+    padding:8px 10px;font-size:.8rem;color:var(--palm);font-weight:600}
   .sheet-foot{display:flex;gap:10px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));
     border-top:1px solid var(--line);background:var(--card)}
   .sheet-foot .ghost{flex:0 0 38%}
@@ -632,7 +634,7 @@ async function fetchCarry(){
     if(r.status==="ok"){
       $("carryOver").value=Math.round(r.lastRemaining||0);
       recalc();
-      toast(r.lastDate?`ยกมาจาก ${r.lastDate}: ${fmt(r.lastRemaining)} กก.`:"ยังไม่มีประวัติลานนี้","ok");
+      toast(r.lastDate?`ยกมาจาก ${thAny(r.lastDate)}: ${fmt(r.lastRemaining)} กก.`:"ยังไม่มีประวัติลานนี้","ok");
     }
   }catch{toast("ดึงยอดไม่ได้ ลองใหม่","err");}
 }
@@ -691,6 +693,13 @@ function collect(){
 /* ---- พรีวิวก่อนส่ง ---- */
 let pendingClosing=false;
 const thDate=(v)=>{if(!v)return"—";const[y,m,d]=v.split("-").map(Number);return `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${(y+543)%100}`;};
+/* แปลงวันที่รูปแบบใดก็ได้ (ISO หรือ Date string จากชีต) → dd/mm/พ.ศ. */
+function thAny(v){
+  if(!v)return"";
+  const d=new Date(v);
+  if(isNaN(d.getTime()))return String(v);
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${(d.getFullYear()+543)%100}`;
+}
 
 function row(k,v,cls){return `<div class="pv-row ${cls||''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;}
 function kg(n){return fmt(n)+" กก.";}
@@ -731,22 +740,24 @@ function buildPreview(){
   h+=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
   h+=row("จำนวนกระบะ",d.pickups+" กระบะ");
   if(d.note)h+=row("หมายเหตุ",d.note);
-  // สรุปรอบ (ล้างลาน)
+  // สรุปรอบ (ล้างลาน) — โชว์รอบที่กำลังตัด/ล้าง
   if(pendingClosing){
     const bad=d.cycleShip>d.cycleBuy||!d.cycleBuy;
-    h+=`<div class="pv-cycle"><div class="cap">🧾 สรุปยอดทั้งรอบ (ล้างลาน)</div>`;
+    const rn=cycleFetched.cycleId?` #${cycleFetched.cycleId}`:"";
+    h+=`<div class="pv-cycle"><div class="cap">🧾 สรุปยอดทั้งรอบ${rn} (ก่อนล้างลาน)</div>`;
     const dz=cycleDays();
     h+=row("ช่วง",`${thDate(d.cycleFrom)} – ${thDate(d.cycleTo)}${dz?` (${dz} วัน)`:""}`);
-    h+=row("ซื้อรวมทั้งรอบ",kg(d.cycleBuy));
-    h+=row("ส่งรวมทั้งรอบ",kg(d.cycleShip));
+    h+=row("ซื้อรวมทั้งรอบ",kg(d.cycleBuy),"sub");
+    h+=row("ส่งรวมทั้งรอบ",kg(d.cycleShip),"sub");
     h+=bad?row("หายทั้งรอบ","⚠️ ยอดไม่ครบ","lost")
           :row("หายทั้งรอบ",`${kg(d.cycleLost)} (${d.cycleLostPct.toFixed(2)}%)`,"lost");
+    h+=`<div class="pv-contnote">ยืนยันแล้ว ระบบจะปิดรอบนี้ แล้วพาไปกรอกซื้อใหม่รอบถัดไป</div>`;
     h+=`</div>`;
   }
   $("pvBody").innerHTML=h;
-  $("pvTitle").textContent=pendingClosing?"ตรวจก่อนปิดยอดรอบ":"ตรวจก่อนส่ง";
+  $("pvTitle").textContent=pendingClosing?"ตรวจก่อนปิดยอดรอบ (ล้างลาน)":"ตรวจก่อนส่ง";
   $("pvYard").textContent=d.yard||"—";
-  const rnd=cycleFetched.cycleId?` · รอบที่ ${cycleFetched.cycleId}`:"";
+  const rnd=cycleFetched.cycleId?(pendingClosing?` · ปิดรอบที่ ${cycleFetched.cycleId}`:` · รอบที่ ${cycleFetched.cycleId}`):"";
   $("pvSub").textContent=`${thDate(d.date)}${d.recorder?" · "+d.recorder:""}${rnd}`;
   const cbtn=$("pvConfirm");
   cbtn.classList.toggle("closing",pendingClosing);
@@ -790,10 +801,9 @@ async function saveData(closing){
 
 $("form").addEventListener("submit",(e)=>{
   e.preventDefault();
-  if($("isClear").checked) saveData(true);   // ล้างลาน: สรุปโชว์ในแผงแล้ว ปิดยอด+ต่อเลย
-  else openPreview(false);                    // แจ้งปกติ: พรีวิวก่อนส่ง
+  openPreview($("isClear").checked);   // ทั้งแจ้งปกติและปิดยอด → พรีวิวก่อน (ปิดยอดจะโชว์สรุปรอบ)
 });
-$("newBuyBtn").addEventListener("click",()=>saveData(true));
+$("newBuyBtn").addEventListener("click",()=>openPreview(true));
 $("pvConfirm").addEventListener("click",()=>saveData(pendingClosing));
 $("pvEdit").addEventListener("click",closePreview);
 $("pvClose").addEventListener("click",closePreview);
