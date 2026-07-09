@@ -106,6 +106,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
   <div class="hdr-logo">🌴</div>
   <div><h1>แจ้งรับงานขนส่ง</h1><p>SSB Smart Supply</p></div>
   <button id="back-dash" class="btn-back hide" onclick="goBackToDashboard()">‹ SSB Dashboard</button>
+  <button id="btn-palm-daily" class="btn-back hide" onclick="goToPalmDaily()">🌴 บันทึกผลปาล์มรายวัน</button>
 </div>
 
 <div class="body">
@@ -404,7 +405,15 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec';
 const LIFF_ID = '2010274217-BF41B8c2';
 const DASHBOARD_URL = 'https://liff.line.me/2010274217-Ot7vGhri';   // SSB Dashboard (LIFF_ID_ADMIN)
+const PALM_DAILY_URL = 'https://sadayu07ktc-droid.github.io/Order_form/palm/';
 
+function goToPalmDaily(){
+  const q = new URLSearchParams();
+  if (U.userId) q.set('uid', U.userId);
+  const nm = U.gardenName || U.name || '';
+  if (nm) q.set('name', nm);
+  window.location.href = PALM_DAILY_URL + (PALM_DAILY_URL.includes('?') ? '&' : '?') + q.toString();
+}
 function goBackToDashboard(){
   if(DASHBOARD_URL){ window.location.href = DASHBOARD_URL; return; }
   if(window.history.length > 1){ window.history.back(); return; }
