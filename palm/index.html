@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>บันทึกลานปาล์มรายวัน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --palm:#1b4332;--palm-2:#2d6a4f;--leaf:#40916c;
+    --oil:#e09f3e;--oil-soft:#fbe9c9;--oil-ink:#8a5e10;
+    --paper:#f6f7f3;--card:#fff;--line:#e3e6df;--ink:#1d211c;--muted:#6c7268;
+    --calc-bg:#eef4ee;--danger:#b23a2e;
+    --radius:14px;--shadow:0 1px 2px rgba(20,30,20,.06),0 8px 24px rgba(20,30,20,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Sarabun",system-ui,sans-serif;background:var(--paper);color:var(--ink);
+    line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:120px}
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px}
+
+  header{background:linear-gradient(135deg,var(--palm),var(--palm-2));color:#fff;
+    padding:22px 0 18px;border-bottom-left-radius:22px;border-bottom-right-radius:22px}
+  header .wrap{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:12px;flex:0 0 auto;background:var(--oil);
+    display:grid;place-items:center;font-size:22px}
+  header h1{font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.18rem;margin:0;letter-spacing:.2px}
+  header p{margin:2px 0 0;font-size:.82rem;opacity:.85}
+
+  .summary{margin-top:-16px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:14px 16px;position:relative;z-index:2;border:1px solid var(--line)}
+  .summary .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .summary .yard{font-family:'Anuphan';font-weight:700;color:var(--palm);display:flex;align-items:center;gap:8px}
+  .cyc{font-size:.68rem;font-weight:700;background:var(--oil-soft);color:var(--oil-ink);
+    padding:2px 8px;border-radius:20px}
+  .summary .big{display:flex;gap:10px;margin-top:6px}
+  .stat{flex:1;background:var(--calc-bg);border-radius:10px;padding:10px 12px;border:1px solid #dde7dd}
+  .stat.alt{background:var(--oil-soft);border-color:#f1dcb0}
+  .stat .lbl{font-size:.72rem;color:var(--muted);font-weight:600}
+  .stat .val{font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.35rem;
+    font-variant-numeric:tabular-nums;color:var(--palm);line-height:1.15}
+  .stat.alt .val{color:var(--oil-ink)}
+  .summary .meta{font-size:.78rem;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+  .summary .meta b{color:var(--ink);font-weight:600}
+  .pill{display:none;margin-top:10px;background:var(--oil-soft);border:1px solid #f1dcb0;color:var(--oil-ink);
+    border-radius:10px;padding:9px 12px;font-size:.82rem;font-weight:600;
+    align-items:center;justify-content:space-between;gap:10px}
+  .pill.show{display:flex}
+  .pill button{font-size:.8rem;padding:6px 12px;border-radius:8px;border:none;background:var(--oil);
+    color:#fff;font-weight:700;cursor:pointer;font-family:"Anuphan",sans-serif}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-top:14px;padding:16px}
+  .sec-title{font-family:"Anuphan",sans-serif;font-weight:600;font-size:.82rem;color:var(--leaf);
+    text-transform:uppercase;letter-spacing:.6px;margin:0 0 12px;display:flex;align-items:center;gap:8px;
+    justify-content:space-between}
+  .sec-title .t{display:flex;align-items:center;gap:8px}
+  .sec-title .t::before{content:"";width:6px;height:18px;background:var(--oil);border-radius:3px}
+  .mini{font-family:"Anuphan";font-size:.72rem;font-weight:700;color:var(--palm);background:#eef4ee;
+    border:1px solid #cfe0cf;border-radius:8px;padding:5px 10px;cursor:pointer;text-transform:none;letter-spacing:0}
+  .mini:active{transform:scale(.97)}
+  .mini[aria-expanded="true"]{background:#fff0ec;border-color:#e7b6ad;color:var(--danger)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field.full{grid-column:1/-1}
+  label{font-size:.82rem;font-weight:600;color:#41463d}
+  label .req{color:var(--danger)}
+  .unit{font-size:.72rem;color:var(--muted);font-weight:500}
+  .calc-note{font-size:.7rem;color:var(--leaf);font-weight:600}
+
+  input,select,textarea{font-family:inherit;font-size:1rem;color:var(--ink);background:#fcfdfb;
+    border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;
+    transition:border-color .15s,box-shadow .15s}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--leaf);
+    box-shadow:0 0 0 3px rgba(64,145,108,.15)}
+  input[type=number]{font-variant-numeric:tabular-nums;text-align:right;letter-spacing:.3px}
+  textarea{text-align:left;min-height:60px;resize:vertical}
+  select{text-align:left}
+  input.calc{background:var(--calc-bg);border-style:dashed;border-color:#c4d4c4;color:var(--palm);
+    font-weight:700;cursor:default}
+  input.calc.warn{background:#fff0ec;border-color:#e7b6ad;color:var(--danger)}
+  .err-text{color:var(--danger);font-size:.78rem;font-weight:600;display:none;margin-top:2px}
+  .err-text.show{display:block}
+  .subhead{grid-column:1/-1;font-size:.75rem;color:var(--muted);font-weight:600;margin:2px 0 -4px}
+  .subhead-row{display:flex;align-items:center;justify-content:space-between}
+  .addbtn{font-family:"Anuphan",sans-serif;font-size:.74rem;font-weight:700;color:var(--palm);
+    background:#eef4ee;border:1px solid #cfe0cf;border-radius:8px;padding:4px 10px;cursor:pointer;transition:.15s}
+  .addbtn:active{transform:scale(.96)}
+  .addbtn[aria-expanded="true"]{background:#fff0ec;border-color:#e7b6ad;color:var(--danger)}
+  #companyField[hidden]{display:none}
+  #boraiField[hidden]{display:none}
+
+  .disclosure{grid-column:1/-1;display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+    background:#f4f7f2;border:1px dashed #cfe0cf;border-radius:10px;padding:10px 12px;cursor:pointer;
+    font-family:"Sarabun",sans-serif;font-size:.85rem;font-weight:600;color:var(--palm);transition:.15s}
+  .disclosure:active{transform:scale(.99)}
+  .disclosure .chev{display:inline-block;transition:transform .18s;color:var(--leaf)}
+  .disclosure[aria-expanded="true"]{background:#eef4ee;border-style:solid}
+  .disclosure[aria-expanded="true"] .chev{transform:rotate(90deg)}
+  #destBreakdown[hidden]{display:none}
+
+  /* ---- ปิดยอด/ล้างลาน panel ---- */
+  .clear-toggle{display:flex;align-items:center;gap:10px;background:#fff7ea;border:1.5px solid #f1dcb0;
+    border-radius:12px;padding:12px 14px;margin-top:14px;cursor:pointer}
+  .clear-toggle input{width:20px;height:20px;accent-color:var(--oil);flex:0 0 auto}
+  .clear-toggle .txt b{font-family:'Anuphan';color:var(--oil-ink);display:block;font-size:.95rem}
+  .clear-toggle .txt span{font-size:.76rem;color:var(--muted)}
+  .close-panel{display:none;margin-top:14px;border:1.5px solid var(--oil);border-radius:var(--radius);
+    overflow:hidden;box-shadow:var(--shadow)}
+  .close-panel.show{display:block}
+  .close-panel .cap{background:linear-gradient(135deg,#e09f3e,#c9821f);color:#fff;padding:12px 16px;
+    font-family:'Anuphan';font-weight:700;display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .close-panel .cap-days{font-size:.78rem;font-weight:700;background:rgba(255,255,255,.25);
+    padding:3px 10px;border-radius:20px;white-space:nowrap}
+  .close-panel .body{background:#fffdf8;padding:16px}
+  .close-panel .lost-box{display:flex;gap:10px;margin-top:12px}
+  .lost-box .stat{background:#fff0ec;border-color:#e7b6ad}
+  .lost-box .stat .val{color:var(--danger)}
+  .lost-box .stat.pct .val{color:var(--oil-ink)}
+  .lost-box .stat.pct{background:var(--oil-soft);border-color:#f1dcb0}
+
+  .bar{position:fixed;left:0;right:0;bottom:0;background:rgba(246,247,243,.92);backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:20}
+  .bar .wrap{display:flex;gap:10px;align-items:center}
+  button.send{flex:1;font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.05rem;color:#fff;
+    background:var(--palm);border:none;border-radius:12px;padding:14px;cursor:pointer;transition:.12s}
+  button.send.closing{background:linear-gradient(135deg,#e09f3e,#c9821f)}
+  button.send:active{transform:scale(.985)}
+  button.send:disabled{background:#9aa79a;cursor:not-allowed}
+  button.ghost{font-family:"Anuphan",sans-serif;font-weight:600;color:var(--palm);background:#fff;
+    border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:92px;background:var(--ink);
+    color:#fff;padding:11px 18px;border-radius:30px;font-size:.9rem;font-weight:500;opacity:0;
+    pointer-events:none;transition:.25s;z-index:40;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.ok{background:var(--palm-2)}
+  .toast.err{background:var(--danger)}
+  .hint{font-size:.78rem;color:var(--muted);margin:14px 4px 0;text-align:center}
+
+  .pills{display:flex;gap:8px;flex-wrap:wrap}
+  .pill-opt{height:46px;border-radius:23px;border:1.5px solid var(--line);background:#fcfdfb;
+    font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.02rem;color:var(--ink);
+    cursor:pointer;padding:0 20px;transition:.12s}
+  .pill-opt.round{min-width:52px;padding:0;width:52px}
+  .pill-opt:active{transform:scale(.96)}
+  .pill-opt.active{background:var(--palm);border-color:var(--palm);color:#fff}
+
+  /* ---- พรีวิวก่อนส่ง ---- */
+  .modal{position:fixed;inset:0;background:rgba(20,30,20,.45);z-index:50;display:none;
+    align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
+  .modal.show{display:flex;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .sheet{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;
+    max-height:88vh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.25);
+    animation:slideup .28s cubic-bezier(.2,.8,.2,1)}
+  @keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+  .sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+  .sheet-title{font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.1rem;color:var(--palm)}
+  .sheet-eyebrow{font-family:"Anuphan",sans-serif;font-weight:700;font-size:.72rem;color:var(--leaf);
+    text-transform:uppercase;letter-spacing:.6px}
+  .sheet-yard{font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.55rem;color:var(--palm);
+    line-height:1.15;margin-top:1px}
+  .sheet-sub{font-size:.85rem;color:var(--muted);margin-top:3px}
+  .sheet-head .x{background:#f2f4f0;border:none;width:34px;height:34px;border-radius:50%;
+    font-size:1rem;color:var(--muted);cursor:pointer;flex:0 0 auto}
+  .sheet-body{overflow-y:auto;padding:8px 18px 4px;-webkit-overflow-scrolling:touch}
+  .pv-sec{margin:14px 0 4px;font-family:"Anuphan";font-weight:700;font-size:.78rem;color:var(--leaf);
+    text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:7px}
+  .pv-sec::before{content:"";width:5px;height:15px;background:var(--oil);border-radius:3px}
+  .pv-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    padding:7px 0;border-bottom:1px dashed #eceee8;font-size:.92rem}
+  .pv-row .k{color:var(--muted)}
+  .pv-row .v{font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);text-align:right}
+  .pv-row.hi .v{color:var(--palm);font-size:1.05rem}
+  .pv-row.hi.oil .v{color:var(--oil-ink)}
+  .pv-row.sub{background:#eef4ee;border-radius:9px;padding:8px 10px;margin:2px 0;border-bottom-color:transparent}
+  .pv-row.sub .k{color:var(--palm);font-weight:700}
+  .pv-row.sub .v{color:var(--palm)}
+  .pv-row.lost .v{color:var(--danger)}
+  .pv-cycle{background:#fffdf8;border:1.5px solid var(--oil);border-radius:12px;padding:4px 14px 10px;margin-top:10px}
+  .pv-cycle .cap{font-family:"Anuphan";font-weight:700;color:var(--oil-ink);padding:10px 0 2px;font-size:.95rem}
+  .sheet-foot{display:flex;gap:10px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);background:var(--card)}
+  .sheet-foot .ghost{flex:0 0 38%}
+  .sheet-foot .send{flex:1}
+  .sheet-foot .send.closing{background:linear-gradient(135deg,#e09f3e,#c9821f)}
+
+  .newbuy{margin-top:12px;width:100%;font-family:"Anuphan",sans-serif;font-weight:700;font-size:1rem;
+    color:#fff;background:linear-gradient(135deg,#2d6a4f,#1b4332);border:none;border-radius:12px;
+    padding:13px;cursor:pointer;transition:.12s}
+  .newbuy:active{transform:scale(.985)}
+  .newbuy:disabled{background:#9aa79a;cursor:not-allowed}
+
+  .newcycle{display:none;margin-top:12px;background:#e8f3ec;border:1.5px solid #bcdcc7;color:var(--palm);
+    border-radius:12px;padding:11px 14px;font-size:.86rem;align-items:center;gap:8px;
+    animation:pop .25s ease}
+  .newcycle.show{display:flex}
+  .newcycle b{font-family:'Anuphan';font-weight:700}
+  .newcycle button{margin-left:auto;background:none;border:none;color:var(--muted);font-size:1rem;
+    cursor:pointer;padding:2px 6px;line-height:1}
+  @keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+  .moved-note{background:#eef4ee;border:1px dashed #bcdcc7;border-radius:10px;padding:10px 12px;
+    font-size:.82rem;color:var(--palm);font-weight:600}
+  .moved-note b{font-family:'Anuphan'}
+  .mini.pull{width:100%;margin-top:10px;padding:9px;font-size:.82rem;background:#fff7ea;
+    border-color:#f1dcb0;color:var(--oil-ink)}
+  .cycle-warn{display:none;margin-top:10px;background:#fff0ec;border:1px solid #e7b6ad;color:var(--danger);
+    border-radius:10px;padding:9px 12px;font-size:.8rem;font-weight:600}
+  .cycle-warn.show{display:block}
+  .lost-box .stat.neg .val{color:var(--danger)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="logo">🌴</div>
+    <div>
+      <h1>บันทึกลานปาล์มรายวัน</h1>
+      <p>ซื้อ–ส่งรายวัน · ปิดยอดตอนล้างลาน</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="summary">
+    <div class="row">
+      <div class="yard"><span id="sumYard">— เลือกลาน —</span><span class="cyc" id="sumCycle" style="display:none"></span></div>
+      <div class="meta" id="sumDate"></div>
+    </div>
+    <div class="big">
+      <div class="stat"><div class="lbl">รวม (กก.)</div><div class="val" id="sTotal">0</div></div>
+      <div class="stat alt"><div class="lbl">คงค้าง (กก.)</div><div class="val" id="sRemain">0</div></div>
+    </div>
+    <div class="meta">
+      <span>ส่งรวม <b id="sSend">0</b> กก.</span>
+      <span>น้ำหนักหาย <b id="sLost">0</b> กก.</span>
+      <span>คิดเป็น <b id="sPct">0</b>%</span>
+    </div>
+    <div class="pill" id="offlinePill">
+      <span>มีข้อมูลค้างส่ง <b id="queueCount">0</b> รายการ</span>
+      <button type="button" id="retryBtn">ส่งซ้ำ</button>
+    </div>
+  </div>
+
+  <div class="newcycle" id="newCycleBanner">
+    🆕 <b id="ncText">เริ่มรอบใหม่</b> — ค้างลาน 0 กรอกซื้อใหม่ได้เลย
+    <button type="button" id="ncClose" aria-label="ปิด">✕</button>
+  </div>
+
+  <form id="form" autocomplete="off">
+    <!-- ข้อมูลทั่วไป -->
+    <section>
+      <h2 class="sec-title"><span class="t">ข้อมูลทั่วไป</span>
+        <button type="button" class="mini" id="carryBtn">⬇ ดึงยอดยกมา</button></h2>
+      <div class="grid">
+        <div class="field">
+          <label for="date">วันที่ <span class="req">*</span></label>
+          <input type="date" id="date" name="date" required />
+        </div>
+        <div class="field">
+          <label for="yard">ลาน <span class="req">*</span></label>
+          <select id="yard" name="yard" required>
+            <option value="" disabled selected>เลือกลาน</option>
+            <option>ห้วยสะท้อน</option><option>ชุมแสง</option><option>วัฒนานคร</option>
+            <option>วังรี</option><option>คลองกิ่ว</option><option>คลองหาด</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="recorder">ผู้บันทึก</label>
+          <input type="text" id="recorder" name="recorder" placeholder="ชื่อผู้กรอก" />
+        </div>
+      </div>
+    </section>
+
+    <!-- รับเข้า -->
+    <section>
+      <h2 class="sec-title"><span class="t">รับเข้า</span></h2>
+      <div class="grid">
+        <div class="field">
+          <label for="carryOver">ค้างลาน <span class="unit">(กก.)</span></label>
+          <input type="number" inputmode="numeric" id="carryOver" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="rspo">RSPO <span class="unit">(กก.)</span></label>
+          <input type="number" inputmode="numeric" id="rspo" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="subhead subhead-row">
+          <span>ซื้อเข้า</span>
+          <button type="button" class="addbtn" id="companyToggle" aria-expanded="false">＋ ซื้อบริษัท</button>
+        </div>
+        <div class="field">
+          <label for="buyInA">ซื้อ A <span class="unit">(กก.)</span></label>
+          <input type="number" inputmode="numeric" id="buyInA" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="buyInB">ซื้อ B <span class="unit">(กก.)</span></label>
+          <input type="number" inputmode="numeric" id="buyInB" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="field full" id="companyField" hidden>
+          <label for="buyCompany">ซื้อบริษัท <span class="unit">(กก.)</span></label>
+          <input type="number" inputmode="numeric" id="buyCompany" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="buyIn"><span id="buyInLabel">ซื้อรวม (A+B)</span> <span class="calc-note">อัตโนมัติ</span></label>
+          <input type="text" id="buyIn" class="calc" readonly value="0" />
+        </div>
+        <div class="field">
+          <label for="total">รวม (ค้าง+ซื้อ) <span class="calc-note">อัตโนมัติ</span></label>
+          <input type="text" id="total" class="calc" readonly value="0" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ส่งออก -->
+    <section>
+      <h2 class="sec-title"><span class="t">ส่งออก</span>
+        <button type="button" class="mini" id="boraiToggle" aria-expanded="false">＋ ส่งบ่อไร่</button></h2>
+      <div class="grid">
+        <div class="field">
+          <label for="sendFactory">ส่งโรงงาน (หนองใหญ่) <span class="unit">(กก.)</span></label>
+          <input type="number" inputmode="numeric" id="sendFactory" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="tripsFactory">จำนวนเที่ยว <span class="unit">(โรงงาน)</span></label>
+          <input type="number" inputmode="numeric" id="tripsFactory" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="field full" id="boraiField" hidden>
+          <div class="grid" style="margin-top:2px">
+            <div class="field">
+              <label for="sendOther">ส่งบ่อไร่ <span class="unit">(กก.)</span></label>
+              <input type="number" inputmode="numeric" id="sendOther" min="0" step="1" placeholder="0" />
+            </div>
+            <div class="field">
+              <label for="tripsBorai">จำนวนเที่ยว <span class="unit">(บ่อไร่)</span></label>
+              <input type="number" inputmode="numeric" id="tripsBorai" min="0" step="1" placeholder="0" />
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="rawCull">คัดปาล์มดิบ <span class="unit">(ทะลาย)</span></label>
+          <input type="number" inputmode="numeric" id="rawCull" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="field">
+          <label for="rawCullTrucks">รถคัดปาล์มดิบ <span class="unit">(คัน)</span></label>
+          <input type="number" inputmode="numeric" id="rawCullTrucks" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="field full">
+          <label for="dest">หมายเหตุปลายทาง</label>
+          <input type="text" id="dest" placeholder="เช่น หนองใหญ่ 2 เที่ยว" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ปิดยอด -->
+    <section>
+      <h2 class="sec-title"><span class="t">ปิดยอด</span></h2>
+      <div class="grid">
+        <div class="field">
+          <label for="remaining">คงค้าง (คำนวณ) <span class="calc-note">อัตโนมัติ</span></label>
+          <input type="text" id="remaining" class="calc" readonly value="0" />
+          <span class="err-text" id="remErr">คงค้างติดลบ — เช็กยอดส่งกับยอดรวม</span>
+        </div>
+        <div class="field">
+          <label for="actualRemain">คงเหลือจริง (ชั่ง) <span class="unit">(กก.)</span></label>
+          <input type="number" inputmode="numeric" id="actualRemain" min="0" step="1" placeholder="ว่าง = ตรงตามคำนวณ" />
+        </div>
+        <div class="field" id="dailyLostField">
+          <label for="weightLost">น้ำหนักหาย (วันนี้) <span class="calc-note">อัตโนมัติ</span></label>
+          <input type="text" id="weightLost" class="calc" readonly value="0" />
+        </div>
+        <div class="field" id="dailyPctField">
+          <label for="lostPct">คิดเป็น % <span class="calc-note">อัตโนมัติ</span></label>
+          <input type="text" id="lostPct" class="calc" readonly value="0" />
+        </div>
+        <div class="field full" id="lossMovedNote" style="display:none">
+          <div class="moved-note">🧾 วันล้างลาน — ดูน้ำหนักหายจริงที่ <b>สรุปยอดทั้งรอบ</b> ด้านล่าง</div>
+        </div>
+      </div>
+
+      <!-- toggle ล้างลาน -->
+      <label class="clear-toggle" for="isClear">
+        <input type="checkbox" id="isClear" />
+        <span class="txt"><b>ล้างลาน — ปิดยอดรอบนี้</b>
+          <span>เปิดเมื่อคงเหลือจริง = 0 เพื่อสรุปยอดทั้งรอบ</span></span>
+      </label>
+
+      <!-- close panel -->
+      <div class="close-panel" id="closePanel">
+        <div class="cap"><span>🧾 สรุปยอดทั้งรอบ (ล้างลาน)</span><span class="cap-days" id="cycleDaysCap">— วัน</span></div>
+        <div class="body">
+          <div class="grid">
+            <div class="field">
+              <label for="cycleFrom">วันเริ่มรอบ</label>
+              <input type="date" id="cycleFrom" />
+            </div>
+            <div class="field">
+              <label for="cycleTo">วันปิดรอบ</label>
+              <input type="date" id="cycleTo" />
+            </div>
+            <div class="field">
+              <label for="cycleBuy">ซื้อรวมทั้งรอบ <span class="unit">(กก.)</span></label>
+              <input type="number" inputmode="numeric" id="cycleBuy" min="0" step="1" placeholder="กรอกยอดรวม หรือกดดึง" />
+            </div>
+            <div class="field">
+              <label for="cycleShip">ส่งรวมทั้งรอบ <span class="unit">(กก.)</span></label>
+              <input type="number" inputmode="numeric" id="cycleShip" min="0" step="1" placeholder="กรอกยอดรวม หรือกดดึง" />
+            </div>
+          </div>
+          <button type="button" class="mini pull" id="cyclePullBtn">📥 ดึงยอดสะสมจากระบบ</button>
+          <div class="lost-box">
+            <div class="stat"><div class="lbl">หายทั้งรอบ (กก.)</div><div class="val" id="cLost">0</div></div>
+            <div class="stat pct"><div class="lbl">คิดเป็น %</div><div class="val" id="cPct">0</div></div>
+          </div>
+          <div class="cycle-warn" id="cycleWarn">⚠️ ส่งรวมมากกว่าซื้อรวม — ยอดทั้งรอบอาจยังไม่ครบ ลองกดดึงยอด หรือใส่ยอดรวมเอง</div>
+          <p class="hint" style="margin-top:10px">กรอกยอดรวมทั้งรอบเอง หรือกด “ดึงยอดสะสม” ให้ระบบเติมให้ แล้วแก้ทับได้</p>
+          <button type="button" class="newbuy" id="newBuyBtn">➕ ปิดยอด &amp; ซื้อใหม่ต่อ</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- แจ้งรถรับปาล์ม -->
+    <section>
+      <h2 class="sec-title"><span class="t">🛻 แจ้งรถรับปาล์ม</span></h2>
+      <div class="field full">
+        <label>จำนวนกระบะ <span class="req">*</span></label>
+        <div class="pills" id="pickupPills">
+          <button type="button" class="pill-opt round" data-v="1">1</button>
+          <button type="button" class="pill-opt round" data-v="2">2</button>
+          <button type="button" class="pill-opt" data-v="more" id="pickupMore">ระบุ</button>
+        </div>
+        <select id="pickupSelect" hidden style="margin-top:10px">
+          <option value="3">3 กระบะ</option>
+          <option value="4">4 กระบะ</option>
+          <option value="5">5 กระบะ</option>
+          <option value="6">6 กระบะ</option>
+          <option value="7">7 กระบะ</option>
+          <option value="8">8 กระบะ</option>
+          <option value="9">9 กระบะ</option>
+          <option value="10">10 กระบะ</option>
+        </select>
+      </div>
+      <div class="field full" style="margin-top:12px">
+        <label for="note">หมายเหตุ</label>
+        <textarea id="note" placeholder="ระบุเพิ่มเติม (ถ้ามี)"></textarea>
+      </div>
+    </section>
+
+    <p class="hint">ช่องเส้นประคือยอดที่ระบบคิดให้ ไม่ต้องพิมพ์เอง</p>
+  </form>
+</main>
+
+<div class="bar">
+  <div class="wrap">
+    <button type="button" class="ghost" id="clearBtn">ล้าง</button>
+    <button type="submit" form="form" class="send" id="sendBtn">บันทึกข้อมูล</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- พรีวิวก่อนส่ง -->
+<div class="modal" id="previewModal">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-eyebrow" id="pvTitle">ตรวจก่อนส่ง</div>
+        <div class="sheet-yard" id="pvYard">—</div>
+        <div class="sheet-sub" id="pvSub">—</div>
+      </div>
+      <button type="button" class="x" id="pvClose" aria-label="ปิด">✕</button>
+    </div>
+    <div class="sheet-body" id="pvBody"></div>
+    <div class="sheet-foot">
+      <button type="button" class="ghost" id="pvEdit">← แก้ไข</button>
+      <button type="button" class="send" id="pvConfirm">✓ ยืนยันส่ง</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== ตั้งค่า: วาง URL ของ Apps Script Web App (ลงท้าย /exec) ====== */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec";
+
+const QUEUE_KEY = "palmQueue_v2";
+const $ = (id)=>document.getElementById(id);
+const num = (id)=>{const v=parseFloat(String($(id).value).replace(/,/g,""));return isNaN(v)?0:v;};
+const fmt = (n)=>Math.round(n).toLocaleString("en-US");
+let cycleFetched = {sumBuy:0,sumShip:0,cycleStart:"",cycleId:1,ok:false}; // ยอดสะสมจากหลังบ้าน (ไม่รวมวันนี้)
+
+function initDate(){$("date").value=new Date().toISOString().slice(0,10);updateSummaryDate();}
+function updateSummaryDate(){
+  const v=$("date").value; if(!v){$("sumDate").textContent="";return;}
+  const [y,m,d]=v.split("-").map(Number);
+  $("sumDate").textContent=`${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${(y+543)%100}`;
+}
+
+/* ---- คำนวณหลัก ---- */
+function companyOn(){return !$("companyField").hidden;}
+function sumBuyIn(){return num("buyInA")+num("buyInB")+(companyOn()?num("buyCompany"):0);}
+function boraiOn(){return !$("boraiField").hidden;}
+function sumSend(){return num("sendFactory")+(boraiOn()?num("sendOther"):0);}
+function recalc(){
+  const company = companyOn()?num("buyCompany"):0;
+  const buyIn = num("buyInA")+num("buyInB")+company;
+  $("buyInLabel").textContent = companyOn()?"ซื้อรวม (A+B+บริษัท)":"ซื้อรวม (A+B)";
+  const total = num("carryOver")+buyIn;
+  const sendAll = sumSend();
+  const remain = total-sendAll;
+  const actualRaw = $("actualRemain").value.trim();
+  const actual = actualRaw==="" ? remain : num("actualRemain");
+  const lost = remain-actual;
+  const pct = total>0 ? lost/total*100 : 0;
+
+  $("buyIn").value=fmt(buyIn);
+  $("total").value=fmt(total);
+  $("remaining").value=fmt(remain);
+  $("weightLost").value=fmt(lost);
+  $("lostPct").value=pct.toFixed(2);
+
+  $("remaining").classList.toggle("warn",remain<0);
+  $("remErr").classList.toggle("show",remain<0);
+  $("weightLost").classList.toggle("warn",lost>0);
+
+  $("sTotal").textContent=fmt(total);
+  $("sRemain").textContent=fmt(actual);   // คงค้างข้างบน = ของที่เหลือจริง (ล้างลาน=0)
+  $("sSend").textContent=fmt(sendAll);
+  $("sLost").textContent=fmt(lost);
+  $("sPct").textContent=pct.toFixed(2);
+  $("sumYard").textContent=$("yard").value||"— เลือกลาน —";
+
+  // แนะนำล้างลานอัตโนมัติเมื่อชั่งจริง = 0
+  if(actualRaw==="0" && !$("isClear").checked){$("isClear").checked=true;onClearToggle();}
+  // วันล้างลาน: ซ่อนหาย/%รายวัน ให้ดูที่สรุปรอบแทน
+  const clearing=$("isClear").checked;
+  $("dailyLostField").style.display=clearing?"none":"";
+  $("dailyPctField").style.display=clearing?"none":"";
+  $("lossMovedNote").style.display=clearing?"":"none";
+  recalcCycle();
+}
+
+/* ---- สรุปยอดทั้งรอบ ----
+   เติมอัตโนมัติเฉพาะเมื่อดึงยอดสะสมจากหลังบ้านสำเร็จ (สะสม + วันนี้)
+   ถ้ายังไม่ได้ดึง/ดึงไม่ได้ → เว้นให้แอดมินกรอกยอดรวมเอง ไม่เดามั่วจากยอดวันเดียว */
+function recalcCycle(){
+  const buyToday=sumBuyIn();
+  const shipToday=sumSend();
+  if(cycleFetched.ok){
+    if(!$("cycleBuy").dataset.touched)  $("cycleBuy").value  = Math.round(cycleFetched.sumBuy+buyToday);
+    if(!$("cycleShip").dataset.touched) $("cycleShip").value = Math.round(cycleFetched.sumShip+shipToday);
+  }
+  const b=num("cycleBuy"), s=num("cycleShip");
+  const hasVal = $("cycleBuy").value!=="" || $("cycleShip").value!=="";
+  const lost=b-s, pct=b>0?lost/b*100:0;
+  const bad = hasVal && (s>b || b===0);   // ส่ง>ซื้อ = ยอดรอบยังไม่ครบ
+  if(!hasVal){ $("cLost").textContent="—"; $("cPct").textContent="—"; }
+  else if(bad){ $("cLost").textContent="ยอดไม่ครบ"; $("cPct").textContent="—"; }
+  else { $("cLost").textContent=fmt(lost); $("cPct").textContent=pct.toFixed(2); }
+  $("cycleWarn").classList.toggle("show",bad);
+  $("cLost").parentElement.classList.toggle("neg",bad);
+  const dz=cycleDays();
+  $("cycleDaysCap").textContent=dz?`${dz} วัน`:"— วัน";
+}
+
+/* จำนวนวันของรอบ (นับรวมวันเริ่มและวันปิด) */
+function cycleDays(){
+  const f=$("cycleFrom").value, t=$("cycleTo").value;
+  if(!f||!t)return null;
+  const d=Math.round((new Date(t)-new Date(f))/86400000)+1;
+  return d>0?d:null;
+}
+
+function onClearToggle(){
+  const on=$("isClear").checked;
+  $("closePanel").classList.toggle("show",on);
+  const btn=$("sendBtn");
+  btn.classList.toggle("closing",on);
+  btn.textContent=on?"บันทึก + ปิดยอดรอบ":"บันทึกข้อมูล";
+  if(on){
+    if(!$("cycleTo").value) $("cycleTo").value=$("date").value;
+    if(!$("cycleFrom").value && cycleFetched.cycleStart) $("cycleFrom").value=cycleFetched.cycleStart;
+    fetchCycle();          // ดึงยอดสะสมล่าสุด
+  }
+}
+
+/* ---- toast ---- */
+let tt;
+function toast(msg,type){const t=$("toast");t.textContent=msg;t.className="toast show "+(type||"");
+  clearTimeout(tt);tt=setTimeout(()=>t.className="toast",2800);}
+
+/* ---- คิวออฟไลน์ ---- */
+function getQueue(){try{return JSON.parse(localStorage.getItem(QUEUE_KEY)||"[]");}catch{return[];}}
+function setQueue(q){try{localStorage.setItem(QUEUE_KEY,JSON.stringify(q));}catch{}renderQueue();}
+function renderQueue(){const q=getQueue();$("queueCount").textContent=q.length;
+  $("offlinePill").classList.toggle("show",q.length>0);}
+
+/* ---- API ---- */
+function apiReady(){return !SCRIPT_URL.startsWith("วาง_URL");}
+async function post(payload){
+  const res=await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify(payload)});
+  const data=await res.json();
+  if(!data||data.status!=="ok")throw new Error(data&&data.message||"บันทึกไม่สำเร็จ");
+  return data;
+}
+async function apiGet(params){
+  const qs=new URLSearchParams(params).toString();
+  const res=await fetch(SCRIPT_URL+"?"+qs);
+  return await res.json();
+}
+async function flushQueue(){
+  let q=getQueue(); if(!q.length||!apiReady())return;
+  const remain=[];
+  for(const it of q){try{await post(it);}catch{remain.push(it);}}
+  setQueue(remain);
+  if(!remain.length)toast("ส่งข้อมูลค้างครบแล้ว ✓","ok");
+}
+
+/* ---- ดึงยอดยกมา (ค้างลาน) ---- */
+async function fetchCarry(){
+  const yard=$("yard").value;
+  if(!yard){toast("เลือกลานก่อน","err");return;}
+  if(!apiReady()){toast("ยังไม่ได้ตั้งค่า SCRIPT_URL","err");return;}
+  try{
+    const r=await apiGet({action:"carry",yard});
+    if(r.status==="ok"){
+      $("carryOver").value=Math.round(r.lastRemaining||0);
+      recalc();
+      toast(r.lastDate?`ยกมาจาก ${r.lastDate}: ${fmt(r.lastRemaining)} กก.`:"ยังไม่มีประวัติลานนี้","ok");
+    }
+  }catch{toast("ดึงยอดไม่ได้ ลองใหม่","err");}
+}
+
+/* ---- ดึงยอดสะสมทั้งรอบ ---- */
+async function fetchCycle(manual){
+  const yard=$("yard").value;
+  if(!yard){if(manual)toast("เลือกลานก่อน","err");return;}
+  if(!apiReady()){if(manual)toast("ยังไม่ได้ตั้งค่า SCRIPT_URL — กรอกยอดรวมเอง","err");return;}
+  try{
+    const r=await apiGet({action:"cycle",yard});
+    if(r.status==="ok"){
+      cycleFetched={sumBuy:r.sumBuy||0,sumShip:r.sumShip||0,cycleStart:r.cycleStart||"",cycleId:r.cycleId||1,ok:true};
+      if(!$("cycleFrom").value && r.cycleStart)$("cycleFrom").value=r.cycleStart;
+      $("cycleBuy").dataset.touched="";$("cycleShip").dataset.touched="";
+      recalcCycle();
+      if(manual){
+        const buyToday=sumBuyIn(), shipToday=sumSend();
+        toast(`ดึงยอด ${r.days||0} วัน: ซื้อ ${fmt(r.sumBuy+buyToday)} · ส่ง ${fmt(r.sumShip+shipToday)}`,"ok");
+      }
+    }
+  }catch{if(manual)toast("ดึงยอดไม่ได้ กรอกยอดรวมเอง","err");}
+}
+
+/* ---- รวมข้อมูล ---- */
+function collect(){
+  const buyIn=sumBuyIn();
+  const total=num("carryOver")+buyIn;
+  const remain=total-sumSend();
+  const closing=$("isClear").checked;
+  const o={
+    type:closing?"close":"daily",
+    date:$("date").value, yard:$("yard").value, recorder:$("recorder").value.trim(),
+    carryOver:num("carryOver"), buyInA:num("buyInA"), buyInB:num("buyInB"),
+    buyCompany:companyOn()?num("buyCompany"):0, buyIn, rspo:num("rspo"), total,
+    sendFactory:num("sendFactory"), sendOther:boraiOn()?num("sendOther"):0,
+    tripsFactory:num("tripsFactory"), tripsBorai:boraiOn()?num("tripsBorai"):0,
+    remaining:remain,
+    actualRemain:$("actualRemain").value.trim()===""?"":num("actualRemain"),
+    weightLost:parseFloat($("weightLost").value.replace(/,/g,""))||0,
+    lostPct:parseFloat($("lostPct").value)||0,
+    rawCull:num("rawCull"), rawCullTrucks:num("rawCullTrucks"),
+    pickups:closing?"":pickups,
+    dest:$("dest").value.trim(), note:closing?"":$("note").value.trim(),
+    submittedAt:new Date().toISOString(),
+  };
+  if(closing){
+    o.cycleFrom=$("cycleFrom").value; o.cycleTo=$("cycleTo").value;
+    o.cycleBuy=num("cycleBuy"); o.cycleShip=num("cycleShip");
+    o.cycleLost=num("cycleBuy")-num("cycleShip");
+    o.cycleLostPct=num("cycleBuy")>0?((num("cycleBuy")-num("cycleShip"))/num("cycleBuy")*100):0;
+  }
+  return o;
+}
+
+/* ---- พรีวิวก่อนส่ง ---- */
+let pendingClosing=false;
+const thDate=(v)=>{if(!v)return"—";const[y,m,d]=v.split("-").map(Number);return `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${(y+543)%100}`;};
+
+function row(k,v,cls){return `<div class="pv-row ${cls||''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;}
+function kg(n){return fmt(n)+" กก.";}
+
+function buildPreview(){
+  const d=collect();
+  const sendAll=d.sendFactory+d.sendOther;
+  let h="";
+  // รับเข้า
+  h+=`<div class="pv-sec">รับเข้า</div>`;
+  h+=row("ค้างลาน",kg(d.carryOver));
+  h+=row("ซื้อ A",kg(d.buyInA));
+  if(d.buyInB)h+=row("ซื้อ B",kg(d.buyInB));
+  if(d.buyCompany)h+=row("ซื้อบริษัท",kg(d.buyCompany));
+  h+=row("ซื้อรวม",kg(d.buyIn),"sub");
+  if(d.rspo)h+=row("RSPO",kg(d.rspo));
+  h+=row("รวม (ค้าง+ซื้อ)",kg(d.total),"hi");
+  // ส่งออก
+  h+=`<div class="pv-sec">ส่งออก</div>`;
+  h+=row("ส่งโรงงาน (หนองใหญ่)",kg(d.sendFactory));
+  if(d.tripsFactory)h+=row("เที่ยว (โรงงาน)",d.tripsFactory+" เที่ยว");
+  if(d.sendOther)h+=row("ส่งบ่อไร่",kg(d.sendOther));
+  if(d.tripsBorai)h+=row("เที่ยว (บ่อไร่)",d.tripsBorai+" เที่ยว");
+  h+=row("ส่งรวม",kg(sendAll),"sub");
+  if(d.rawCull)h+=row("คัดปาล์มดิบ",d.rawCull+" ทะลาย");
+  if(d.rawCullTrucks)h+=row("รถคัดปาล์มดิบ",d.rawCullTrucks+" คัน");
+  if(d.dest)h+=row("ปลายทาง",d.dest);
+  // ปิดยอด
+  h+=`<div class="pv-sec">ปิดยอด</div>`;
+  h+=row("คงค้าง",kg(d.remaining),"hi oil");
+  if(!pendingClosing){
+    if(d.actualRemain!=="")h+=row("คงเหลือจริง (ชั่ง)",kg(d.actualRemain));
+    if(d.weightLost)h+=row("น้ำหนักหาย (วันนี้)",kg(d.weightLost),"lost");
+  }else{
+    h+=row("คงเหลือจริง (ชั่ง)",kg(d.actualRemain===""?0:d.actualRemain));
+  }
+  // แจ้งรถรับปาล์ม
+  h+=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
+  h+=row("จำนวนกระบะ",d.pickups+" กระบะ");
+  if(d.note)h+=row("หมายเหตุ",d.note);
+  // สรุปรอบ (ล้างลาน)
+  if(pendingClosing){
+    const bad=d.cycleShip>d.cycleBuy||!d.cycleBuy;
+    h+=`<div class="pv-cycle"><div class="cap">🧾 สรุปยอดทั้งรอบ (ล้างลาน)</div>`;
+    const dz=cycleDays();
+    h+=row("ช่วง",`${thDate(d.cycleFrom)} – ${thDate(d.cycleTo)}${dz?` (${dz} วัน)`:""}`);
+    h+=row("ซื้อรวมทั้งรอบ",kg(d.cycleBuy));
+    h+=row("ส่งรวมทั้งรอบ",kg(d.cycleShip));
+    h+=bad?row("หายทั้งรอบ","⚠️ ยอดไม่ครบ","lost")
+          :row("หายทั้งรอบ",`${kg(d.cycleLost)} (${d.cycleLostPct.toFixed(2)}%)`,"lost");
+    h+=`</div>`;
+  }
+  $("pvBody").innerHTML=h;
+  $("pvTitle").textContent=pendingClosing?"ตรวจก่อนปิดยอดรอบ":"ตรวจก่อนส่ง";
+  $("pvYard").textContent=d.yard||"—";
+  $("pvSub").textContent=`${thDate(d.date)}${d.recorder?" · "+d.recorder:""}`;
+  const cbtn=$("pvConfirm");
+  cbtn.classList.toggle("closing",pendingClosing);
+  cbtn.textContent=pendingClosing?"✓ ยืนยันปิดยอด":"✓ ยืนยันส่ง";
+}
+
+function openPreview(closing){
+  if(!$("date").value||!$("yard").value){toast("กรอกวันที่และเลือกลานก่อน","err");return;}
+  pendingClosing=closing;
+  $("isClear").checked=closing;
+  buildPreview();
+  $("previewModal").classList.add("show");
+}
+function closePreview(){$("previewModal").classList.remove("show");}
+
+/* ---- บันทึกจริง ---- */
+let saving=false;
+async function saveData(closing){
+  if(saving)return;
+  if(!$("date").value||!$("yard").value){toast("กรอกวันที่และเลือกลานก่อน","err");return;}
+  if(!apiReady()){toast("ยังไม่ได้ตั้งค่า SCRIPT_URL","err");return;}
+  saving=true;
+  const btn=$("sendBtn"); const cbtn=$("pvConfirm");
+  cbtn.disabled=true; btn.disabled=true; cbtn.textContent="กำลังส่ง…";
+  $("isClear").checked=closing;
+  const payload=collect();
+  try{
+    await post(payload);
+    if(closing){toast(`ปิดยอดรอบ ${payload.yard} แล้ว ✓`,"ok");startNewCycle();}
+    else{toast(`บันทึก ${payload.yard} สำเร็จ ✓`,"ok");softReset();}
+    closePreview();
+  }catch{
+    const q=getQueue();q.push(payload);setQueue(q);
+    toast("เน็ตมีปัญหา เก็บไว้ส่งซ้ำให้แล้ว","err");
+    closePreview();
+  }finally{
+    saving=false; btn.disabled=false; cbtn.disabled=false;
+    cbtn.textContent=closing?"✓ ยืนยันปิดยอด":"✓ ยืนยันส่ง"; onClearToggle();
+  }
+}
+
+$("form").addEventListener("submit",(e)=>{
+  e.preventDefault();
+  if($("isClear").checked) saveData(true);   // ล้างลาน: สรุปโชว์ในแผงแล้ว ปิดยอด+ต่อเลย
+  else openPreview(false);                    // แจ้งปกติ: พรีวิวก่อนส่ง
+});
+$("newBuyBtn").addEventListener("click",()=>saveData(true));
+$("pvConfirm").addEventListener("click",()=>saveData(pendingClosing));
+$("pvEdit").addEventListener("click",closePreview);
+$("pvClose").addEventListener("click",closePreview);
+$("previewModal").addEventListener("click",(e)=>{if(e.target===$("previewModal"))closePreview();});
+
+/* ล้างเฉพาะตัวเลข เก็บวันที่/ลาน/ผู้บันทึก */
+const NUMFIELDS=["carryOver","rspo","buyInA","buyInB","buyCompany","sendFactory","sendOther",
+  "tripsFactory","tripsBorai","actualRemain","rawCull","rawCullTrucks","dest","note"];
+function softReset(){NUMFIELDS.forEach(id=>$(id).value="");$("newCycleBanner").classList.remove("show");pickups=1;renderPickups();recalc();}
+
+/* หลังปิดยอด → เริ่มรอบใหม่: ค้างลาน=0, เคลียร์ซื้อ, ปิด panel, พาไปกรอกซื้อใหม่ */
+function startNewCycle(){
+  softReset();
+  $("carryOver").value=0;
+  $("isClear").checked=false;
+  ["cycleFrom","cycleTo","cycleBuy","cycleShip"].forEach(id=>{$(id).value="";$(id).dataset.touched="";});
+  const nextId=(cycleFetched.cycleId||1)+1;
+  cycleFetched={sumBuy:0,sumShip:0,cycleStart:"",cycleId:nextId,ok:false};
+  $("cycleWarn").classList.remove("show");
+  onClearToggle();recalc();
+  // โชว์แบนเนอร์ + เลื่อนไปช่องซื้อ A
+  $("ncText").textContent=`รอบใหม่ #${nextId} · ${$("yard").value}`;
+  $("newCycleBanner").classList.add("show");
+  const buyA=$("buyInA");
+  buyA.scrollIntoView({behavior:"smooth",block:"center"});
+  setTimeout(()=>buyA.focus(),350);
+}
+$("ncClose").addEventListener("click",()=>$("newCycleBanner").classList.remove("show"));
+
+$("clearBtn").addEventListener("click",()=>{softReset();toast("ล้างช่องตัวเลขแล้ว");});
+$("retryBtn").addEventListener("click",flushQueue);
+$("carryBtn").addEventListener("click",fetchCarry);
+$("isClear").addEventListener("change",()=>{onClearToggle();recalc();});
+$("cycleBuy").addEventListener("input",()=>{$("cycleBuy").dataset.touched="1";recalcCycle();});
+$("cycleShip").addEventListener("input",()=>{$("cycleShip").dataset.touched="1";recalcCycle();});
+$("cyclePullBtn").addEventListener("click",()=>fetchCycle(true));
+$("companyToggle").addEventListener("click",()=>{
+  const t=$("companyToggle"), open=t.getAttribute("aria-expanded")==="true";
+  t.setAttribute("aria-expanded",String(!open));
+  t.textContent=open?"＋ ซื้อบริษัท":"✕ เอาออก";
+  $("companyField").hidden=open;
+  if(open)$("buyCompany").value="";   // เอาออก = ล้างค่า
+  else setTimeout(()=>$("buyCompany").focus(),50);
+  recalc();
+});
+$("buyCompany").addEventListener("input",recalc);
+$("boraiToggle").addEventListener("click",()=>{
+  const t=$("boraiToggle"), open=t.getAttribute("aria-expanded")==="true";
+  t.setAttribute("aria-expanded",String(!open));
+  t.textContent=open?"＋ ส่งบ่อไร่":"✕ เอาออก";
+  $("boraiField").hidden=open;
+  if(open){$("sendOther").value="";$("tripsBorai").value="";}
+  else setTimeout(()=>$("sendOther").focus(),50);
+  recalc();
+});
+$("sendOther").addEventListener("input",recalc);
+
+/* ---- จำนวนกระบะ (1/2/ระบุ→3-10) ---- */
+let pickups=1;
+function renderPickups(){
+  document.querySelectorAll("#pickupPills .pill-opt").forEach(b=>b.classList.remove("active"));
+  if(pickups>=3){
+    $("pickupMore").classList.add("active");
+    $("pickupSelect").hidden=false; $("pickupSelect").value=String(pickups);
+  }else{
+    const el=document.querySelector(`#pickupPills .pill-opt[data-v="${pickups}"]`);
+    if(el)el.classList.add("active");
+    $("pickupSelect").hidden=true;
+  }
+}
+$("pickupPills").addEventListener("click",(e)=>{
+  const btn=e.target.closest(".pill-opt"); if(!btn)return;
+  if(btn.dataset.v==="more"){pickups=parseInt($("pickupSelect").value)||3;}
+  else{pickups=parseInt(btn.dataset.v);}
+  renderPickups();
+});
+$("pickupSelect").addEventListener("change",()=>{pickups=parseInt($("pickupSelect").value);renderPickups();});
+$("cycleFrom").addEventListener("change",recalcCycle);
+$("cycleTo").addEventListener("change",recalcCycle);
+
+["carryOver","rspo","buyInA","buyInB","sendFactory","sendOther","actualRemain"].forEach(id=>$(id).addEventListener("input",recalc));
+$("yard").addEventListener("change",()=>{recalc();$("carryOver").value="";});
+$("date").addEventListener("change",updateSummaryDate);
+
+/* ---- รับค่าจาก URL (ส่งมาจากแอป SSB: ?uid=&name=) ---- */
+function applyUrlParams(){
+  const q=new URLSearchParams(location.search);
+  const name=q.get("name"), uid=q.get("uid");
+  if(name){
+    const nm=decodeURIComponent(name);
+    // ลองเลือกลานให้ตรงชื่อ (ถ้าตรงกับตัวเลือกที่มี)
+    const sel=$("yard"), opt=[...sel.options].find(o=>o.value && (o.value===nm || nm.includes(o.value)));
+    if(opt){sel.value=opt.value;}
+    // เติมผู้บันทึก = ชื่อลาน/ผู้ส่ง
+    if(!$("recorder").value) $("recorder").value=nm;
+  }
+  if(uid){ window.__ssbUid=uid; }   // เก็บไว้เผื่อใช้อ้างอิง
+  recalc();
+}
+
+initDate();recalc();renderQueue();renderPickups();applyUrlParams();
+window.addEventListener("online",flushQueue);
+if(navigator.onLine)flushQueue();
+</script>
+</body>
+</html>
