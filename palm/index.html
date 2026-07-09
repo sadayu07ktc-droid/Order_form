@@ -82,6 +82,8 @@
   input.calc{background:var(--calc-bg);border-style:dashed;border-color:#c4d4c4;color:var(--palm);
     font-weight:700;cursor:default}
   input.calc.warn{background:#fff0ec;border-color:#e7b6ad;color:var(--danger)}
+  input.locked-field{background:#eef1ec;color:var(--muted);cursor:not-allowed;
+    border-style:dashed;border-color:#cfd6cc;font-weight:700}
   .err-text{color:var(--danger);font-size:.78rem;font-weight:600;display:none;margin-top:2px}
   .err-text.show{display:block}
   .subhead{grid-column:1/-1;font-size:.75rem;color:var(--muted);font-weight:600;margin:2px 0 -4px}
@@ -550,7 +552,7 @@ function recalc(){
 function recalcCycle(){
   const buyToday=sumBuyIn();
   const shipToday=sumSend();
-  if(cycleFetched.ok){
+  if(cycleFetched.ok && $("isClear").checked){   // เติมเฉพาะตอนแผงล้างลานเปิด
     if(!$("cycleBuy").dataset.touched)  $("cycleBuy").value  = Math.round(cycleFetched.sumBuy+buyToday);
     if(!$("cycleShip").dataset.touched) $("cycleShip").value = Math.round(cycleFetched.sumShip+shipToday);
   }
@@ -744,7 +746,8 @@ function buildPreview(){
   $("pvBody").innerHTML=h;
   $("pvTitle").textContent=pendingClosing?"ตรวจก่อนปิดยอดรอบ":"ตรวจก่อนส่ง";
   $("pvYard").textContent=d.yard||"—";
-  $("pvSub").textContent=`${thDate(d.date)}${d.recorder?" · "+d.recorder:""}`;
+  const rnd=cycleFetched.cycleId?` · รอบที่ ${cycleFetched.cycleId}`:"";
+  $("pvSub").textContent=`${thDate(d.date)}${d.recorder?" · "+d.recorder:""}${rnd}`;
   const cbtn=$("pvConfirm");
   cbtn.classList.toggle("closing",pendingClosing);
   cbtn.textContent=pendingClosing?"✓ ยืนยันปิดยอด":"✓ ยืนยันส่ง";
@@ -799,12 +802,19 @@ $("previewModal").addEventListener("click",(e)=>{if(e.target===$("previewModal")
 /* ล้างเฉพาะตัวเลข เก็บวันที่/ลาน/ผู้บันทึก */
 const NUMFIELDS=["carryOver","rspo","buyInA","buyInB","buyCompany","sendFactory","sendOther",
   "tripsFactory","tripsBorai","actualRemain","rawCull","rawCullTrucks","dest","note"];
-function softReset(){NUMFIELDS.forEach(id=>$(id).value="");$("newCycleBanner").classList.remove("show");pickups=1;renderPickups();recalc();}
+function lockCarry(on){
+  const c=$("carryOver");
+  c.readOnly=on;
+  c.classList.toggle("locked-field",on);
+  $("carryBtn").style.display=on?"none":"";   // ปิดปุ่มดึงยอดยกมาตอนล็อก
+}
+function softReset(){lockCarry(false);NUMFIELDS.forEach(id=>$(id).value="");$("newCycleBanner").classList.remove("show");pickups=1;renderPickups();recalc();}
 
 /* หลังปิดยอด → เริ่มรอบใหม่: ค้างลาน=0, เคลียร์ซื้อ, ปิด panel, พาไปกรอกซื้อใหม่ */
 function startNewCycle(){
   softReset();
   $("carryOver").value=0;
+  lockCarry(true);                 // ล็อกค้างลาน=0 (รอบใหม่เริ่มที่ศูนย์เสมอ)
   $("isClear").checked=false;
   ["cycleFrom","cycleTo","cycleBuy","cycleShip"].forEach(id=>{$(id).value="";$(id).dataset.touched="";});
   const nextId=(cycleFetched.cycleId||1)+1;
@@ -818,7 +828,7 @@ function startNewCycle(){
   buyA.scrollIntoView({behavior:"smooth",block:"center"});
   setTimeout(()=>buyA.focus(),350);
 }
-$("ncClose").addEventListener("click",()=>$("newCycleBanner").classList.remove("show"));
+$("ncClose").addEventListener("click",()=>{$("newCycleBanner").classList.remove("show");lockCarry(false);});
 
 $("clearBtn").addEventListener("click",()=>{softReset();toast("ล้างช่องตัวเลขแล้ว");});
 $("retryBtn").addEventListener("click",flushQueue);
@@ -872,7 +882,7 @@ $("cycleFrom").addEventListener("change",recalcCycle);
 $("cycleTo").addEventListener("change",recalcCycle);
 
 ["carryOver","rspo","buyInA","buyInB","sendFactory","sendOther","actualRemain"].forEach(id=>$(id).addEventListener("input",recalc));
-$("yard").addEventListener("change",()=>{recalc();$("carryOver").value="";});
+$("yard").addEventListener("change",()=>{lockCarry(false);$("carryOver").value="";recalc();fetchCycle();});
 $("date").addEventListener("change",updateSummaryDate);
 
 /* ---- รับค่าจาก URL (ส่งมาจากแอป SSB: ?uid=&name=) ---- */
