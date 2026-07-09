@@ -485,7 +485,7 @@
 
 <script>
 /* ====== ตั้งค่า: วาง URL ของ Apps Script Web App (ลงท้าย /exec) ====== */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec";
+const SCRIPT_URL = "วาง_URL_ของ_APPS_SCRIPT_ตรงนี้";
 
 const QUEUE_KEY = "palmQueue_v2";
 const $ = (id)=>document.getElementById(id);
@@ -880,14 +880,15 @@ function applyUrlParams(){
   const q=new URLSearchParams(location.search);
   const name=q.get("name"), uid=q.get("uid");
   if(name){
-    const nm=decodeURIComponent(name);
-    // ลองเลือกลานให้ตรงชื่อ (ถ้าตรงกับตัวเลือกที่มี)
-    const sel=$("yard"), opt=[...sel.options].find(o=>o.value && (o.value===nm || nm.includes(o.value)));
-    if(opt){sel.value=opt.value;}
-    // เติมผู้บันทึก = ชื่อลาน/ผู้ส่ง
-    if(!$("recorder").value) $("recorder").value=nm;
+    const nm=decodeURIComponent(name).trim();
+    const sel=$("yard");
+    // ชื่อลานเทจาก SSB → เลือกในช่อง "ลาน" (ถ้าไม่มีในตัวเลือก เพิ่มให้)
+    let opt=[...sel.options].find(o=>o.value===nm);
+    if(!opt){opt=document.createElement("option");opt.value=nm;opt.textContent=nm;sel.appendChild(opt);}
+    sel.value=nm;
+    // ผู้บันทึกเว้นว่างให้กรอกเอง (ไม่เติมชื่อลาน)
   }
-  if(uid){ window.__ssbUid=uid; }   // เก็บไว้เผื่อใช้อ้างอิง
+  if(uid){ window.__ssbUid=uid; }   // เก็บไว้เผื่ออ้างอิง
   recalc();
 }
 
