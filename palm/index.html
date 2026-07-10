@@ -193,6 +193,10 @@
     background:linear-gradient(135deg,var(--palm-2),var(--palm));border-radius:9px;
     padding:9px 13px;margin:16px 0 6px}
   .pv-part:first-child{margin-top:4px}
+  .pv-pickup{background:linear-gradient(135deg,#fff1d6,#ffe4b3);border:2px solid var(--oil);
+    border-radius:12px;padding:13px 15px;margin:6px 0 2px;font-family:"Anuphan",sans-serif;
+    font-weight:700;font-size:1.05rem;color:var(--oil-ink);display:flex;align-items:center;gap:8px}
+  .pv-pickup b{color:#b23a2e;font-size:1.4rem;margin:0 2px}
   .sheet-foot{display:flex;flex-direction:column;gap:8px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));
     border-top:1px solid var(--line);background:var(--card)}
   .sheet-foot .foot-row{display:flex;gap:10px}
@@ -749,7 +753,8 @@ function dayRowsHTML(d,closing){
   }
   if((d.pickups!==""&&d.pickups!=null)||d.note){
     h+=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
-    if(d.pickups!==""&&d.pickups!=null)h+=row("จำนวนกระบะ",d.pickups+" กระบะ");
+    if(d.pickups!==""&&d.pickups!=null)
+      h+=`<div class="pv-pickup">🛻 ต้องการรถรับปาล์ม <b>${d.pickups}</b> กระบะ</div>`;
     if(d.note)h+=row("หมายเหตุ",d.note);
   }
   return h;
@@ -781,6 +786,14 @@ function buildPreview(){
     h+=cycleBoxHTML(L,`🧾 สรุปยอดทั้งรอบ #${L.cycleId} (รวมวันล้างลาน)`);
     h+=`<div class="pv-part">③ ซื้อใหม่ — รอบ #${(L.cycleId||0)+1}</div>`;
     h+=dayRowsHTML(d,false);
+    // รวมส่งทั้งวัน (วันหมดลาน + ซื้อใหม่) แยกปลายทาง — ตรงกับ (หนองใหญ่ ..)(บ่อไร่ ..)
+    const totNong=(L.day&&L.day.sendFactory||0)+(d.sendFactory||0);
+    const totBorai=(L.day&&L.day.sendOther||0)+(d.sendOther||0);
+    h+=`<div class="pv-cycle" style="margin-top:14px"><div class="cap">🚚 รวมส่งทั้งวัน (หมดลาน + ซื้อใหม่)</div>`;
+    h+=row("หนองใหญ่ (โรงงาน)",kg(totNong),"sub");
+    h+=row("บ่อไร่",kg(totBorai),"sub");
+    h+=row("ส่งรวมทั้งวัน",kg(totNong+totBorai),"hi");
+    h+=`</div>`;
   }else{
     h+=dayRowsHTML(d,pendingClosing);
     if(pendingClosing){
