@@ -901,11 +901,27 @@ async function saveAsImage(){
   document.body.appendChild(cap);
   try{
     const canvas=await html2canvas(cap,{scale:2,backgroundColor:"#ffffff",useCORS:true});
-    const url=canvas.toDataURL("image/png");
-    const a=document.createElement("a");
     const fn=`ปาล์ม_${yard}_${$("date").value||"วันนี้"}.png`.replace(/[\/\\?%*:|"<>]/g,"-");
-    a.href=url; a.download=fn; a.click();
-    toast("บันทึกรูปแล้ว ส่งเข้า LINE ได้เลย ✓","ok");
+    // แปลงเป็นไฟล์ภาพ
+    const blob=await new Promise(res=>canvas.toBlob(res,"image/png"));
+    const file=new File([blob],fn,{type:"image/png"});
+    // มือถือ: ใช้เมนูแชร์ของเครื่อง → เลือก "บันทึกรูปภาพ" (ลงแกลเลอรี) หรือแชร์เข้า LINE ได้เลย
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file], title:`ปาล์ม ${yard}`});
+        toast("เลือก “บันทึกรูปภาพ” หรือแชร์เข้า LINE ได้เลย ✓","ok");
+      }catch(err){
+        if(err && err.name==="AbortError"){/* ผู้ใช้กดยกเลิก ไม่ต้องแจ้ง error */}
+        else throw err;
+      }
+    }else{
+      // คอม/เบราว์เซอร์ที่ไม่รองรับแชร์: ดาวน์โหลดไฟล์
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url; a.download=fn; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),4000);
+      toast("บันทึกรูปแล้ว ส่งเข้า LINE ได้เลย ✓","ok");
+    }
   }catch(e){
     toast("สร้างรูปไม่สำเร็จ ลองแคปหน้าจอแทน","err");
   }finally{
