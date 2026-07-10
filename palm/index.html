@@ -503,6 +503,10 @@
           <option value="23:00">23:00 น.</option>
         </select>
         <span class="err-text" id="pickupTimeErr">เลือกจำนวนกระบะแล้วต้องระบุเวลานัดรับ</span>
+        <div class="moved-note" id="pickupDateNote" style="margin-top:8px">
+          🗓️ รับ <b>วันพรุ่งนี้</b> · <span id="pickupDateText">—</span>
+          <span style="font-weight:400;color:var(--muted)">(นัดหลังปิดลานวันนี้)</span>
+        </div>
       </div>
       <div class="field full" style="margin-top:12px">
         <label for="note">หมายเหตุ</label>
@@ -560,6 +564,18 @@ function updateSummaryDate(){
   const v=$("date").value; if(!v){$("sumDate").textContent="";return;}
   const [y,m,d]=v.split("-").map(Number);
   $("sumDate").textContent=`${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${(y+543)%100}`;
+}
+
+/* วัน "พรุ่งนี้" ของวันที่กรอก (YYYY-MM-DD) — ออเดอร์จากฟอร์มนี้ = รับพรุ่งนี้เสมอ */
+function addDaysStr(dateStr,n){
+  if(!dateStr)return"";
+  const [y,m,d]=dateStr.split("-").map(Number);
+  const dt=new Date(y,m-1,d+n);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
+}
+function updatePickupDate(){
+  const t=addDaysStr($("date").value,1);
+  const el=$("pickupDateText"); if(el)el.textContent=t?thDate(t):"—";
 }
 
 /* ---- คำนวณหลัก ---- */
@@ -737,6 +753,7 @@ function collect(){
     rawCull:num("rawCull"), rawCullTrucks:num("rawCullTrucks"),
     pickups:(closing||pickups==null)?"":pickups,
     pickupTime:(closing||pickups==null)?"":$("pickupTime").value,   // 🆕 เวลานัดรับ
+    pickupDate:(closing||pickups==null)?"":addDaysStr($("date").value,1),   // 🆕 วันรับ = พรุ่งนี้
     note:closing?"":$("note").value.trim(),
     uid:window.__ssbUid||"",                                        // 🆕 LINE UID ลานเท (อิงตัวตน)
     submittedAt:new Date().toISOString(),
@@ -802,6 +819,7 @@ function pickupHTML(d){
   let h=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
   if(d.pickups!==""&&d.pickups!=null){
     h+=`<div class="pv-pickup">🛻 ต้องการรถรับปาล์ม <b>${d.pickups}</b> กระบะ</div>`;
+    if(d.pickupDate)h+=row("วันนัดรับ","พรุ่งนี้ "+thAny(d.pickupDate));   // 🆕
     if(d.pickupTime)h+=row("เวลานัดรับ",d.pickupTime+" น.");   // 🆕
   }
   if(d.note)h+=row("หมายเหตุ",d.note);
@@ -1078,6 +1096,7 @@ function renderPickups(){
     $("pickupTime").value=""; $("pickupTimeErr").classList.remove("show");   // 🆕 เคลียร์
     return;
   }
+  updatePickupDate();   // 🆕 อัปเดตวันรับ (พรุ่งนี้)
   if(pickups>=3){
     $("pickupMore").classList.add("active");
     $("pickupSelect").hidden=false; $("pickupSelect").value=String(pickups);
@@ -1104,7 +1123,7 @@ $("cycleTo").addEventListener("change",recalcCycle);
 
 ["carryOver","rspo","buyInA","buyInB","sendFactory","sendOther","actualRemain"].forEach(id=>$(id).addEventListener("input",recalc));
 $("yard").addEventListener("change",()=>{lockCarry(false);$("carryOver").value="";recalc();fetchCycle();});
-$("date").addEventListener("change",updateSummaryDate);
+$("date").addEventListener("change",()=>{updateSummaryDate();updatePickupDate();});
 
 /* ---- รับค่าจาก URL (ส่งมาจากแอป SSB: ?uid=&name=) ---- */
 function applyUrlParams(){
