@@ -449,7 +449,7 @@
     <section>
       <h2 class="sec-title"><span class="t">🛻 แจ้งรถรับปาล์ม</span></h2>
       <div class="field full">
-        <label>จำนวนกระบะ <span class="req">*</span></label>
+        <label>จำนวนกระบะ <span class="unit">(ถ้าเรียกรถ)</span></label>
         <div class="pills" id="pickupPills">
           <button type="button" class="pill-opt round" data-v="1">1</button>
           <button type="button" class="pill-opt round" data-v="2">2</button>
@@ -697,7 +697,7 @@ function collect(){
     weightLost:parseFloat($("weightLost").value.replace(/,/g,""))||0,
     lostPct:parseFloat($("lostPct").value)||0,
     rawCull:num("rawCull"), rawCullTrucks:num("rawCullTrucks"),
-    pickups:closing?"":pickups,
+    pickups:(closing||pickups==null)?"":pickups,
     note:closing?"":$("note").value.trim(),
     submittedAt:new Date().toISOString(),
   };
@@ -926,7 +926,7 @@ function lockCarry(on){
   c.classList.toggle("locked-field",on);
   $("carryBtn").style.display=on?"none":"";   // ปิดปุ่มดึงยอดยกมาตอนล็อก
 }
-function softReset(){lockCarry(false);NUMFIELDS.forEach(id=>$(id).value="");$("newCycleBanner").classList.remove("show");lastClosed=null;pickups=1;renderPickups();recalc();}
+function softReset(){lockCarry(false);NUMFIELDS.forEach(id=>$(id).value="");$("newCycleBanner").classList.remove("show");lastClosed=null;pickups=null;renderPickups();recalc();}
 
 /* หลังปิดยอด → เริ่มรอบใหม่: ค้างลาน=0, เคลียร์ซื้อ, ปิด panel, พาไปกรอกซื้อใหม่ */
 function startNewCycle(){
@@ -977,9 +977,10 @@ $("boraiToggle").addEventListener("click",()=>{
 $("sendOther").addEventListener("input",recalc);
 
 /* ---- จำนวนกระบะ (1/2/ระบุ→3-10) ---- */
-let pickups=1;
+let pickups=null;   // ไม่ดีฟอลต์ — ผู้ใช้กดเลือกเอง (บางรอบไม่เรียกรถ)
 function renderPickups(){
   document.querySelectorAll("#pickupPills .pill-opt").forEach(b=>b.classList.remove("active"));
+  if(pickups==null){ $("pickupSelect").hidden=true; return; }
   if(pickups>=3){
     $("pickupMore").classList.add("active");
     $("pickupSelect").hidden=false; $("pickupSelect").value=String(pickups);
@@ -991,8 +992,12 @@ function renderPickups(){
 }
 $("pickupPills").addEventListener("click",(e)=>{
   const btn=e.target.closest(".pill-opt"); if(!btn)return;
-  if(btn.dataset.v==="more"){pickups=parseInt($("pickupSelect").value)||3;}
-  else{pickups=parseInt(btn.dataset.v);}
+  if(btn.dataset.v==="more"){
+    pickups = (pickups>=3) ? null : (parseInt($("pickupSelect").value)||3);  // กดระบุซ้ำ = ยกเลิก
+  }else{
+    const v=parseInt(btn.dataset.v);
+    pickups = (pickups===v) ? null : v;   // กดตัวเดิมซ้ำ = ยกเลิก (ไม่เรียกรถ)
+  }
   renderPickups();
 });
 $("pickupSelect").addEventListener("change",()=>{pickups=parseInt($("pickupSelect").value);renderPickups();});
