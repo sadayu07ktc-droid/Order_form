@@ -892,6 +892,23 @@ function openPreview(closing){
     toast("เลือกจำนวนกระบะแล้ว ระบุเวลานัดรับด้วย","err");
     return;
   }
+  if(closing){                                                      // 🆕 ปิดยอด = บังคับสรุปรอบครบ
+    const miss=[];
+    if(!$("cycleFrom").value)      miss.push("วันเริ่มรอบ");
+    if(!$("cycleTo").value)        miss.push("วันปิดรอบ");
+    if($("cycleBuy").value==="")   miss.push("ซื้อรวมทั้งรอบ");
+    if($("cycleShip").value==="")  miss.push("ส่งรวมทั้งรอบ");
+    if(miss.length){
+      $("closePanel").classList.add("show");                        // เปิดแผงล้างลานให้เห็น
+      const first = !$("cycleFrom").value ? "cycleFrom"
+                  : !$("cycleTo").value   ? "cycleTo"
+                  : $("cycleBuy").value===""  ? "cycleBuy" : "cycleShip";
+      $(first).scrollIntoView({behavior:"smooth",block:"center"});
+      setTimeout(()=>$(first).focus(),300);
+      toast("ปิดยอด: กรอก "+miss.join(" · ")+" ก่อน","err");
+      return;
+    }
+  }
   pendingClosing=closing;
   $("isClear").checked=closing;
   buildPreview();
