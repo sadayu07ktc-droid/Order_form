@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     --palm:#1b4332;--palm-2:#2d6a4f;--leaf:#40916c;
@@ -188,11 +189,16 @@
   .pv-cycle .cap{font-family:"Anuphan";font-weight:700;color:var(--oil-ink);padding:10px 0 2px;font-size:.95rem}
   .pv-contnote{margin-top:10px;background:#eef4ee;border:1px dashed #bcdcc7;border-radius:8px;
     padding:8px 10px;font-size:.8rem;color:var(--palm);font-weight:600}
-  .sheet-foot{display:flex;gap:10px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));
+  .sheet-foot{display:flex;flex-direction:column;gap:8px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));
     border-top:1px solid var(--line);background:var(--card)}
+  .sheet-foot .foot-row{display:flex;gap:10px}
   .sheet-foot .ghost{flex:0 0 38%}
   .sheet-foot .send{flex:1}
   .sheet-foot .send.closing{background:linear-gradient(135deg,#e09f3e,#c9821f)}
+  .imgbtn{width:100%;font-family:"Anuphan",sans-serif;font-weight:700;font-size:.95rem;color:var(--palm);
+    background:#eef4ee;border:1.5px solid #cfe0cf;border-radius:12px;padding:11px;cursor:pointer;transition:.12s}
+  .imgbtn:active{transform:scale(.99)}
+  .imgbtn:disabled{opacity:.6;cursor:wait}
 
   .newbuy{margin-top:12px;width:100%;font-family:"Anuphan",sans-serif;font-weight:700;font-size:1rem;
     color:#fff;background:linear-gradient(135deg,#2d6a4f,#1b4332);border:none;border-radius:12px;
@@ -481,8 +487,11 @@
     </div>
     <div class="sheet-body" id="pvBody"></div>
     <div class="sheet-foot">
-      <button type="button" class="ghost" id="pvEdit">← แก้ไข</button>
-      <button type="button" class="send" id="pvConfirm">✓ ยืนยันส่ง</button>
+      <button type="button" class="imgbtn" id="pvImage">📷 บันทึกเป็นรูป</button>
+      <div class="foot-row">
+        <button type="button" class="ghost" id="pvEdit">← แก้ไข</button>
+        <button type="button" class="send" id="pvConfirm">✓ ยืนยันส่ง</button>
+      </div>
     </div>
   </div>
 </div>
@@ -584,7 +593,7 @@ function onClearToggle(){
   $("closePanel").classList.toggle("show",on);
   const btn=$("sendBtn");
   btn.classList.toggle("closing",on);
-  btn.textContent=on?"บันทึก + ปิดยอดรอบ":"บันทึกข้อมูล";
+  btn.textContent=on?"ปิดยอด & ซื้อใหม่ต่อ":"บันทึกข้อมูล";
   if(on){
     if(!$("cycleTo").value) $("cycleTo").value=$("date").value;
     if(!$("cycleFrom").value && cycleFetched.cycleStart) $("cycleFrom").value=cycleFetched.cycleStart;
@@ -692,6 +701,7 @@ function collect(){
 
 /* ---- พรีวิวก่อนส่ง ---- */
 let pendingClosing=false;
+let lastClosed=null;   // สรุปรอบที่เพิ่งปิด (ไว้ต่อในรูปซื้อใหม่)
 const thDate=(v)=>{if(!v)return"—";const[y,m,d]=v.split("-").map(Number);return `${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${(y+543)%100}`;};
 /* แปลงวันที่รูปแบบใดก็ได้ (ISO หรือ Date string จากชีต) → dd/mm/พ.ศ. */
 function thAny(v){
@@ -754,6 +764,17 @@ function buildPreview(){
     h+=`<div class="pv-contnote">ยืนยันแล้ว ระบบจะปิดรอบนี้ แล้วพาไปกรอกซื้อใหม่รอบถัดไป</div>`;
     h+=`</div>`;
   }
+  // ซื้อใหม่รอบถัดไป: ต่อสรุปรอบก่อนที่เพิ่งปิด (ให้อยู่ในรูปเดียว)
+  if(!pendingClosing && lastClosed && $("newCycleBanner").classList.contains("show")){
+    const L=lastClosed, bad=L.ship>L.buy||!L.buy;
+    h+=`<div class="pv-cycle"><div class="cap">🧾 สรุปรอบก่อนหน้า #${L.cycleId} (ปิดแล้ว)</div>`;
+    h+=row("ช่วง",`${thAny(L.from)} – ${thAny(L.to)}${L.days?` (${L.days} วัน)`:""}`);
+    h+=row("ซื้อรวมทั้งรอบ",kg(L.buy),"sub");
+    h+=row("ส่งรวมทั้งรอบ",kg(L.ship),"sub");
+    h+=bad?row("หายทั้งรอบ","⚠️ ยอดไม่ครบ","lost")
+          :row("หายทั้งรอบ",`${kg(L.lost)} (${(L.pct||0).toFixed(2)}%)`,"lost");
+    h+=`</div>`;
+  }
   $("pvBody").innerHTML=h;
   $("pvTitle").textContent=pendingClosing?"ตรวจก่อนปิดยอดรอบ (ล้างลาน)":"ตรวจก่อนส่ง";
   $("pvYard").textContent=d.yard||"—";
@@ -786,12 +807,28 @@ async function saveData(closing){
   const payload=collect();
   try{
     await post(payload);
-    if(closing){toast(`ปิดยอดรอบ ${payload.yard} แล้ว ✓`,"ok");startNewCycle();}
+    if(closing){
+      toast(`ปิดยอดรอบ ${payload.yard} แล้ว ✓`,"ok");
+      const closedId=cycleFetched.cycleId, dz=cycleDays();
+      startNewCycle();
+      // เก็บสรุปรอบที่เพิ่งปิด ไว้โชว์ต่อในรูปซื้อใหม่
+      lastClosed={cycleId:closedId,from:payload.cycleFrom,to:payload.cycleTo,
+        buy:payload.cycleBuy,ship:payload.cycleShip,lost:payload.cycleLost,pct:payload.cycleLostPct,days:dz};
+    }
     else{toast(`บันทึก ${payload.yard} สำเร็จ ✓`,"ok");softReset();}
     closePreview();
   }catch{
     const q=getQueue();q.push(payload);setQueue(q);
-    toast("เน็ตมีปัญหา เก็บไว้ส่งซ้ำให้แล้ว","err");
+    if(closing){
+      // ปิดยอดตอนเน็ตสะดุด: เก็บคิวไว้ส่ง แต่ยังพาไปซื้อใหม่ต่อได้ (คิวเรียงลำดับถูก)
+      const closedId=cycleFetched.cycleId, dz=cycleDays();
+      toast("ปิดยอดแล้ว (ค้างส่ง) — กรอกซื้อใหม่ต่อได้","ok");
+      startNewCycle();
+      lastClosed={cycleId:closedId,from:payload.cycleFrom,to:payload.cycleTo,
+        buy:payload.cycleBuy,ship:payload.cycleShip,lost:payload.cycleLost,pct:payload.cycleLostPct,days:dz};
+    }else{
+      toast("เน็ตมีปัญหา เก็บไว้ส่งซ้ำให้แล้ว","err");
+    }
     closePreview();
   }finally{
     saving=false; btn.disabled=false; cbtn.disabled=false;
@@ -806,6 +843,38 @@ $("form").addEventListener("submit",(e)=>{
 $("newBuyBtn").addEventListener("click",()=>openPreview(true));
 $("pvConfirm").addEventListener("click",()=>saveData(pendingClosing));
 $("pvEdit").addEventListener("click",closePreview);
+
+/* ---- บันทึกพรีวิวเป็นรูป PNG (ส่ง LINE) ---- */
+async function saveAsImage(){
+  if(typeof html2canvas!=="function"){toast("โหลดตัวสร้างรูปไม่ได้ ลองแคปหน้าจอแทน","err");return;}
+  const btn=$("pvImage"); btn.disabled=true; const old=btn.textContent; btn.textContent="กำลังสร้างรูป…";
+  // สร้างกล่องสำหรับถ่ายรูป (หัว + เนื้อหาพรีวิว) พื้นขาว
+  const cap=document.createElement("div");
+  cap.style.cssText="position:fixed;left:-9999px;top:0;width:420px;background:#fff;padding:20px 22px;"+
+    "font-family:'Sarabun',sans-serif;color:#1d211c;box-sizing:border-box";
+  const yard=$("pvYard").textContent, sub=$("pvSub").textContent, title=$("pvTitle").textContent;
+  cap.innerHTML=
+    `<div style="display:flex;align-items:center;gap:10px;border-bottom:2px solid #1b4332;padding-bottom:10px;margin-bottom:10px">
+       <div style="width:38px;height:38px;border-radius:10px;background:#e09f3e;display:grid;place-items:center;font-size:20px">🌴</div>
+       <div><div style="font-family:'Anuphan';font-weight:700;font-size:1.3rem;color:#1b4332;line-height:1.1">${yard}</div>
+       <div style="font-size:.82rem;color:#6c7268">${title} · ${sub}</div></div>
+     </div>`+ $("pvBody").innerHTML;
+  document.body.appendChild(cap);
+  try{
+    const canvas=await html2canvas(cap,{scale:2,backgroundColor:"#ffffff",useCORS:true});
+    const url=canvas.toDataURL("image/png");
+    const a=document.createElement("a");
+    const fn=`ปาล์ม_${yard}_${$("date").value||"วันนี้"}.png`.replace(/[\/\\?%*:|"<>]/g,"-");
+    a.href=url; a.download=fn; a.click();
+    toast("บันทึกรูปแล้ว ส่งเข้า LINE ได้เลย ✓","ok");
+  }catch(e){
+    toast("สร้างรูปไม่สำเร็จ ลองแคปหน้าจอแทน","err");
+  }finally{
+    document.body.removeChild(cap);
+    btn.disabled=false; btn.textContent=old;
+  }
+}
+$("pvImage").addEventListener("click",saveAsImage);
 $("pvClose").addEventListener("click",closePreview);
 $("previewModal").addEventListener("click",(e)=>{if(e.target===$("previewModal"))closePreview();});
 
@@ -818,7 +887,7 @@ function lockCarry(on){
   c.classList.toggle("locked-field",on);
   $("carryBtn").style.display=on?"none":"";   // ปิดปุ่มดึงยอดยกมาตอนล็อก
 }
-function softReset(){lockCarry(false);NUMFIELDS.forEach(id=>$(id).value="");$("newCycleBanner").classList.remove("show");pickups=1;renderPickups();recalc();}
+function softReset(){lockCarry(false);NUMFIELDS.forEach(id=>$(id).value="");$("newCycleBanner").classList.remove("show");lastClosed=null;pickups=1;renderPickups();recalc();}
 
 /* หลังปิดยอด → เริ่มรอบใหม่: ค้างลาน=0, เคลียร์ซื้อ, ปิด panel, พาไปกรอกซื้อใหม่ */
 function startNewCycle(){
