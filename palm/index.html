@@ -189,6 +189,10 @@
   .pv-cycle .cap{font-family:"Anuphan";font-weight:700;color:var(--oil-ink);padding:10px 0 2px;font-size:.95rem}
   .pv-contnote{margin-top:10px;background:#eef4ee;border:1px dashed #bcdcc7;border-radius:8px;
     padding:8px 10px;font-size:.8rem;color:var(--palm);font-weight:600}
+  .pv-part{font-family:"Anuphan",sans-serif;font-weight:700;font-size:1rem;color:#fff;
+    background:linear-gradient(135deg,var(--palm-2),var(--palm));border-radius:9px;
+    padding:9px 13px;margin:16px 0 6px}
+  .pv-part:first-child{margin-top:4px}
   .sheet-foot{display:flex;flex-direction:column;gap:8px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));
     border-top:1px solid var(--line);background:var(--card)}
   .sheet-foot .foot-row{display:flex;gap:10px}
@@ -714,22 +718,20 @@ function thAny(v){
 function row(k,v,cls){return `<div class="pv-row ${cls||''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;}
 function kg(n){return fmt(n)+" กก.";}
 
-function buildPreview(){
-  const d=collect();
-  const sendAll=d.sendFactory+d.sendOther;
+/* แถวข้อมูลรายวัน (ใช้ซ้ำได้ทั้งวันปิดยอดและซื้อใหม่) */
+function dayRowsHTML(d,closing){
+  const sendAll=(d.sendFactory||0)+(d.sendOther||0);
   let h="";
-  // รับเข้า
   h+=`<div class="pv-sec">รับเข้า</div>`;
-  h+=row("ค้างลาน",kg(d.carryOver));
-  h+=row("ซื้อ A",kg(d.buyInA));
+  h+=row("ค้างลาน",kg(d.carryOver||0));
+  h+=row("ซื้อ A",kg(d.buyInA||0));
   if(d.buyInB)h+=row("ซื้อ B",kg(d.buyInB));
   if(d.buyCompany)h+=row("ซื้อบริษัท",kg(d.buyCompany));
-  h+=row("ซื้อรวม",kg(d.buyIn),"sub");
+  h+=row("ซื้อรวม",kg(d.buyIn||0),"sub");
   if(d.rspo)h+=row("RSPO",kg(d.rspo));
-  h+=row("รวม (ค้าง+ซื้อ)",kg(d.total),"hi");
-  // ส่งออก
+  h+=row("รวม (ค้าง+ซื้อ)",kg(d.total||0),"hi");
   h+=`<div class="pv-sec">ส่งออก</div>`;
-  h+=row("ส่งโรงงาน (หนองใหญ่)",kg(d.sendFactory));
+  h+=row("ส่งโรงงาน (หนองใหญ่)",kg(d.sendFactory||0));
   if(d.tripsFactory)h+=row("เที่ยว (โรงงาน)",d.tripsFactory+" เที่ยว");
   if(d.sendOther)h+=row("ส่งบ่อไร่",kg(d.sendOther));
   if(d.tripsBorai)h+=row("เที่ยว (บ่อไร่)",d.tripsBorai+" เที่ยว");
@@ -737,48 +739,64 @@ function buildPreview(){
   if(d.rawCull)h+=row("คัดปาล์มดิบ",d.rawCull+" ทะลาย");
   if(d.rawCullTrucks)h+=row("รถคัดปาล์มดิบ",d.rawCullTrucks+" คัน");
   if(d.dest)h+=row("ปลายทาง",d.dest);
-  // ปิดยอด
   h+=`<div class="pv-sec">ปิดยอด</div>`;
-  h+=row("คงค้าง",kg(d.remaining),"hi oil");
-  if(!pendingClosing){
-    if(d.actualRemain!=="")h+=row("คงเหลือจริง (ชั่ง)",kg(d.actualRemain));
-    if(d.weightLost)h+=row("น้ำหนักหาย (วันนี้)",kg(d.weightLost),"lost");
+  if(closing){
+    h+=row("คงเหลือ (ล้างลาน)",kg(d.actualRemain===""||d.actualRemain==null?0:d.actualRemain),"hi oil");
   }else{
-    h+=row("คงเหลือจริง (ชั่ง)",kg(d.actualRemain===""?0:d.actualRemain));
+    h+=row("คงค้าง",kg(d.remaining||0),"hi oil");
+    if(d.actualRemain!==""&&d.actualRemain!=null)h+=row("คงเหลือจริง (ชั่ง)",kg(d.actualRemain));
+    if(d.weightLost)h+=row("น้ำหนักหาย (วันนี้)",kg(d.weightLost),"lost");
   }
-  // แจ้งรถรับปาล์ม
-  h+=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
-  h+=row("จำนวนกระบะ",d.pickups+" กระบะ");
-  if(d.note)h+=row("หมายเหตุ",d.note);
-  // สรุปรอบ (ล้างลาน) — โชว์รอบที่กำลังตัด/ล้าง
-  if(pendingClosing){
-    const bad=d.cycleShip>d.cycleBuy||!d.cycleBuy;
-    const rn=cycleFetched.cycleId?` #${cycleFetched.cycleId}`:"";
-    h+=`<div class="pv-cycle"><div class="cap">🧾 สรุปยอดทั้งรอบ${rn} (ก่อนล้างลาน)</div>`;
-    const dz=cycleDays();
-    h+=row("ช่วง",`${thDate(d.cycleFrom)} – ${thDate(d.cycleTo)}${dz?` (${dz} วัน)`:""}`);
-    h+=row("ซื้อรวมทั้งรอบ",kg(d.cycleBuy),"sub");
-    h+=row("ส่งรวมทั้งรอบ",kg(d.cycleShip),"sub");
-    h+=bad?row("หายทั้งรอบ","⚠️ ยอดไม่ครบ","lost")
-          :row("หายทั้งรอบ",`${kg(d.cycleLost)} (${d.cycleLostPct.toFixed(2)}%)`,"lost");
-    h+=`<div class="pv-contnote">ยืนยันแล้ว ระบบจะปิดรอบนี้ แล้วพาไปกรอกซื้อใหม่รอบถัดไป</div>`;
-    h+=`</div>`;
+  if((d.pickups!==""&&d.pickups!=null)||d.note){
+    h+=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
+    if(d.pickups!==""&&d.pickups!=null)h+=row("จำนวนกระบะ",d.pickups+" กระบะ");
+    if(d.note)h+=row("หมายเหตุ",d.note);
   }
-  // ซื้อใหม่รอบถัดไป: ต่อสรุปรอบก่อนที่เพิ่งปิด (ให้อยู่ในรูปเดียว)
-  if(!pendingClosing && lastClosed && $("newCycleBanner").classList.contains("show")){
-    const L=lastClosed, bad=L.ship>L.buy||!L.buy;
-    h+=`<div class="pv-cycle"><div class="cap">🧾 สรุปรอบก่อนหน้า #${L.cycleId} (ปิดแล้ว)</div>`;
-    h+=row("ช่วง",`${thAny(L.from)} – ${thAny(L.to)}${L.days?` (${L.days} วัน)`:""}`);
-    h+=row("ซื้อรวมทั้งรอบ",kg(L.buy),"sub");
-    h+=row("ส่งรวมทั้งรอบ",kg(L.ship),"sub");
-    h+=bad?row("หายทั้งรอบ","⚠️ ยอดไม่ครบ","lost")
-          :row("หายทั้งรอบ",`${kg(L.lost)} (${(L.pct||0).toFixed(2)}%)`,"lost");
-    h+=`</div>`;
+  return h;
+}
+
+/* กล่องสรุปยอดทั้งรอบ */
+function cycleBoxHTML(L,cap){
+  const bad=L.ship>L.buy||!L.buy;
+  let h=`<div class="pv-cycle"><div class="cap">${cap}</div>`;
+  h+=row("ช่วง",`${thAny(L.from)} – ${thAny(L.to)}${L.days?` (${L.days} วัน)`:""}`);
+  h+=row("ซื้อรวมทั้งรอบ",kg(L.buy),"sub");
+  h+=row("ส่งรวมทั้งรอบ",kg(L.ship),"sub");
+  h+=bad?row("หายทั้งรอบ","⚠️ ยอดไม่ครบ","lost")
+        :row("หายทั้งรอบ",`${kg(L.lost)} (${(L.pct||0).toFixed(2)}%)`,"lost");
+  h+=`</div>`;
+  return h;
+}
+
+function buildPreview(){
+  const d=collect();
+  let h="";
+  // ซื้อใหม่หลังล้างลาน = รายงานรวม 3 ส่วน ตาม LINE
+  const combining = !pendingClosing && lastClosed && $("newCycleBanner").classList.contains("show");
+  if(combining){
+    const L=lastClosed;
+    h+=`<div class="pv-part">① ยอดรายวัน (หมดลาน)</div>`;
+    h+=dayRowsHTML(L.day||{},true);
+    h+=`<div class="pv-part">② สรุปล้างลาน (ทั้งรอบ)</div>`;
+    h+=cycleBoxHTML(L,`🧾 สรุปยอดทั้งรอบ #${L.cycleId} (รวมวันล้างลาน)`);
+    h+=`<div class="pv-part">③ ซื้อใหม่ — รอบ #${(L.cycleId||0)+1}</div>`;
+    h+=dayRowsHTML(d,false);
+  }else{
+    h+=dayRowsHTML(d,pendingClosing);
+    if(pendingClosing){
+      const rn=cycleFetched.cycleId?` #${cycleFetched.cycleId}`:"";
+      h+=`<div class="pv-part">สรุปล้างลาน</div>`;
+      h+=cycleBoxHTML({from:d.cycleFrom,to:d.cycleTo,buy:d.cycleBuy,ship:d.cycleShip,
+        lost:d.cycleLost,pct:d.cycleLostPct,days:cycleDays()},`🧾 สรุปยอดทั้งรอบ${rn} (รวมวันล้างลาน)`);
+      h+=`<div class="pv-contnote">ยืนยันแล้ว ระบบจะปิดรอบนี้ ถ้ามีซื้อใหม่กรอกต่อได้เลย</div>`;
+    }
   }
   $("pvBody").innerHTML=h;
-  $("pvTitle").textContent=pendingClosing?"ตรวจก่อนปิดยอดรอบ (ล้างลาน)":"ตรวจก่อนส่ง";
+  const comboT=combining?"ล้างลาน + ซื้อใหม่":(pendingClosing?"ปิดยอดรอบ (ล้างลาน)":"แจ้งรายวัน");
+  $("pvTitle").textContent="ตรวจก่อนส่ง · "+comboT;
   $("pvYard").textContent=d.yard||"—";
-  const rnd=cycleFetched.cycleId?(pendingClosing?` · ปิดรอบที่ ${cycleFetched.cycleId}`:` · รอบที่ ${cycleFetched.cycleId}`):"";
+  const cid=combining?(lastClosed.cycleId+1):cycleFetched.cycleId;
+  const rnd=cid?(pendingClosing?` · ปิดรอบที่ ${cid}`:` · รอบที่ ${cid}`):"";
   $("pvSub").textContent=`${thDate(d.date)}${d.recorder?" · "+d.recorder:""}${rnd}`;
   const cbtn=$("pvConfirm");
   cbtn.classList.toggle("closing",pendingClosing);
@@ -811,9 +829,10 @@ async function saveData(closing){
       toast(`ปิดยอดรอบ ${payload.yard} แล้ว ✓`,"ok");
       const closedId=cycleFetched.cycleId, dz=cycleDays();
       startNewCycle();
-      // เก็บสรุปรอบที่เพิ่งปิด ไว้โชว์ต่อในรูปซื้อใหม่
+      // เก็บสรุปรอบที่เพิ่งปิด + ข้อมูลรายวันวันปิด ไว้ทำรายงานรวมตอนซื้อใหม่
       lastClosed={cycleId:closedId,from:payload.cycleFrom,to:payload.cycleTo,
-        buy:payload.cycleBuy,ship:payload.cycleShip,lost:payload.cycleLost,pct:payload.cycleLostPct,days:dz};
+        buy:payload.cycleBuy,ship:payload.cycleShip,lost:payload.cycleLost,pct:payload.cycleLostPct,days:dz,
+        day:payload};
     }
     else{toast(`บันทึก ${payload.yard} สำเร็จ ✓`,"ok");softReset();}
     closePreview();
@@ -825,7 +844,7 @@ async function saveData(closing){
       toast("ปิดยอดแล้ว (ค้างส่ง) — กรอกซื้อใหม่ต่อได้","ok");
       startNewCycle();
       lastClosed={cycleId:closedId,from:payload.cycleFrom,to:payload.cycleTo,
-        buy:payload.cycleBuy,ship:payload.cycleShip,lost:payload.cycleLost,pct:payload.cycleLostPct,days:dz};
+        buy:payload.cycleBuy,ship:payload.cycleShip,lost:payload.cycleLost,pct:payload.cycleLostPct,days:dz,day:payload};
     }else{
       toast("เน็ตมีปัญหา เก็บไว้ส่งซ้ำให้แล้ว","err");
     }
