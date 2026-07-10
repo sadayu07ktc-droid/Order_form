@@ -83,6 +83,21 @@
   input.calc{background:var(--calc-bg);border-style:dashed;border-color:#c4d4c4;color:var(--palm);
     font-weight:700;cursor:default}
   input.calc.warn{background:#fff0ec;border-color:#e7b6ad;color:var(--danger)}
+  .imgResult{position:fixed;inset:0;z-index:9999;background:rgba(20,25,18,.82);
+    display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+  .imgResult .ir-card{background:#fff;border-radius:16px;max-width:440px;width:100%;padding:14px;
+    box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:94vh;display:flex;flex-direction:column}
+  .ir-head{font-family:"Anuphan",sans-serif;font-weight:700;color:var(--palm);font-size:1.05rem;
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .ir-x{cursor:pointer;color:var(--muted);font-size:1.1rem;padding:2px 8px}
+  .ir-img{width:100%;border:1px solid var(--line);border-radius:10px;display:block;
+    -webkit-touch-callout:default;object-fit:contain;overflow:auto}
+  .ir-hint{font-size:.82rem;color:var(--muted);text-align:center;margin:10px 0;line-height:1.6}
+  .ir-btns{display:flex;gap:8px}
+  .ir-btns button{flex:1;font-family:"Anuphan",sans-serif;font-weight:700;font-size:.95rem;
+    border:none;border-radius:11px;padding:12px;cursor:pointer}
+  .ir-share{background:linear-gradient(135deg,var(--palm),var(--palm-2,#2d6a4f));color:#fff}
+  .ir-dl{background:#eef4ee;color:var(--palm);border:1.5px solid #cfe0cf!important}
   input.locked-field{background:#eef1ec;color:var(--muted);cursor:not-allowed;
     border-style:dashed;border-color:#cfd6cc;font-weight:700}
   select.locked-yard{background:#eef4ee;color:var(--palm);font-weight:700;border-color:#cfe0cf;
@@ -902,23 +917,16 @@ async function saveAsImage(){
   try{
     const canvas=await html2canvas(cap,{scale:2,backgroundColor:"#ffffff",useCORS:true});
     const fn=`ปาล์ม_${yard}_${$("date").value||"วันนี้"}.png`.replace(/[\/\\?%*:|"<>]/g,"-");
-    // แปลงเป็นไฟล์ภาพ
     const blob=await new Promise(res=>canvas.toBlob(res,"image/png"));
-    const file=new File([blob],fn,{type:"image/png"});
-    // มือถือ: ใช้เมนูแชร์ของเครื่อง → เลือก "บันทึกรูปภาพ" (ลงแกลเลอรี) หรือแชร์เข้า LINE ได้เลย
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      try{
-        await navigator.share({files:[file], title:`ปาล์ม ${yard}`});
-        toast("เลือก “บันทึกรูปภาพ” หรือแชร์เข้า LINE ได้เลย ✓","ok");
-      }catch(err){
-        if(err && err.name==="AbortError"){/* ผู้ใช้กดยกเลิก ไม่ต้องแจ้ง error */}
-        else throw err;
-      }
+    const isMobile=/Mobi|Android|iPhone|iPad|iPod|Line\//i.test(navigator.userAgent)
+                   || (navigator.maxTouchPoints>1 && matchMedia("(pointer:coarse)").matches);
+    if(isMobile){
+      // มือถือ: โชว์รูปให้กดค้างบันทึกลงแกลเลอรี / แชร์
+      showImageResult(canvas.toDataURL("image/png"),blob,fn,yard);
     }else{
-      // คอม/เบราว์เซอร์ที่ไม่รองรับแชร์: ดาวน์โหลดไฟล์
+      // คอม: ดาวน์โหลดไฟล์ตรงๆ
       const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url; a.download=fn; a.click();
+      const a=document.createElement("a"); a.href=url; a.download=fn; a.click();
       setTimeout(()=>URL.revokeObjectURL(url),4000);
       toast("บันทึกรูปแล้ว ส่งเข้า LINE ได้เลย ✓","ok");
     }
@@ -928,6 +936,40 @@ async function saveAsImage(){
     document.body.removeChild(cap);
     btn.disabled=false; btn.textContent=old;
   }
+}
+
+/* โชว์รูปที่สร้าง — มือถือกดค้างที่รูปเพื่อบันทึกลงแกลเลอรี / ปุ่มแชร์-ดาวน์โหลด */
+function showImageResult(dataUrl,blob,fn,yard){
+  let file=null, canShareFile=false;
+  try{ file=new File([blob],fn,{type:"image/png"});
+       canShareFile=!!(navigator.canShare&&navigator.canShare({files:[file]})); }catch(e){}
+  const ov=document.createElement("div");
+  ov.className="imgResult";
+  ov.innerHTML=
+    `<div class="ir-card">
+       <div class="ir-head">รูปพร้อมแล้ว 🌴 <span class="ir-x">✕</span></div>
+       <img src="${dataUrl}" class="ir-img" alt="รูปสรุป"/>
+       <div class="ir-hint">📱 <b>มือถือ:</b> กดค้างที่รูป → “บันทึกรูปภาพ”<br>💻 <b>คอม:</b> กดปุ่มดาวน์โหลด</div>
+       <div class="ir-btns">
+         ${canShareFile?'<button class="ir-share">📤 แชร์ / บันทึก</button>':''}
+         <button class="ir-dl">⬇️ ดาวน์โหลด</button>
+       </div>
+     </div>`;
+  document.body.appendChild(ov);
+  const close=()=>ov.remove();
+  ov.querySelector(".ir-x").onclick=close;
+  ov.onclick=(e)=>{ if(e.target===ov) close(); };
+  ov.querySelector(".ir-dl").onclick=()=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download=fn; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast("ดาวน์โหลดรูปแล้ว ✓","ok");
+  };
+  const sh=ov.querySelector(".ir-share");
+  if(sh)sh.onclick=async()=>{
+    try{ await navigator.share({files:[file],title:`ปาล์ม ${yard}`}); }
+    catch(e){ if(e&&e.name!=="AbortError") toast("แชร์ไม่ได้ ลองกดค้างที่รูป","err"); }
+  };
 }
 $("pvImage").addEventListener("click",saveAsImage);
 $("pvClose").addEventListener("click",closePreview);
