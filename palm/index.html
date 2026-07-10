@@ -85,6 +85,8 @@
   input.calc.warn{background:#fff0ec;border-color:#e7b6ad;color:var(--danger)}
   input.locked-field{background:#eef1ec;color:var(--muted);cursor:not-allowed;
     border-style:dashed;border-color:#cfd6cc;font-weight:700}
+  select.locked-yard{background:#eef4ee;color:var(--palm);font-weight:700;border-color:#cfe0cf;
+    border-style:solid;opacity:1;-webkit-text-fill-color:var(--palm)}
   .err-text{color:var(--danger);font-size:.78rem;font-weight:600;display:none;margin-top:2px}
   .err-text.show{display:block}
   .subhead{grid-column:1/-1;font-size:.75rem;color:var(--muted);font-weight:600;margin:2px 0 -4px}
@@ -372,10 +374,6 @@
         <div class="field">
           <label for="rawCullTrucks">รถคัดปาล์มดิบ <span class="unit">(คัน)</span></label>
           <input type="number" inputmode="numeric" id="rawCullTrucks" min="0" step="1" placeholder="0" />
-        </div>
-        <div class="field full">
-          <label for="dest">หมายเหตุปลายทาง</label>
-          <input type="text" id="dest" placeholder="เช่น หนองใหญ่ 2 เที่ยว" />
         </div>
       </div>
     </section>
@@ -700,7 +698,7 @@ function collect(){
     lostPct:parseFloat($("lostPct").value)||0,
     rawCull:num("rawCull"), rawCullTrucks:num("rawCullTrucks"),
     pickups:closing?"":pickups,
-    dest:$("dest").value.trim(), note:closing?"":$("note").value.trim(),
+    note:closing?"":$("note").value.trim(),
     submittedAt:new Date().toISOString(),
   };
   if(closing){
@@ -747,7 +745,6 @@ function dayRowsHTML(d,closing){
   h+=row("ส่งรวม",kg(sendAll),"sub");
   if(d.rawCull)h+=row("คัดปาล์มดิบ",d.rawCull+" ทะลาย");
   if(d.rawCullTrucks)h+=row("รถคัดปาล์มดิบ",d.rawCullTrucks+" คัน");
-  if(d.dest)h+=row("ปลายทาง",d.dest);
   h+=`<div class="pv-sec">ปิดยอด</div>`;
   if(closing){
     h+=`<div class="pv-focus"><span class="fl">คงเหลือ (ล้างลาน)</span><span class="fv">${kg(d.actualRemain===""||d.actualRemain==null?0:d.actualRemain)}</span></div>`;
@@ -922,7 +919,7 @@ $("previewModal").addEventListener("click",(e)=>{if(e.target===$("previewModal")
 
 /* ล้างเฉพาะตัวเลข เก็บวันที่/ลาน/ผู้บันทึก */
 const NUMFIELDS=["carryOver","rspo","buyInA","buyInB","buyCompany","sendFactory","sendOther",
-  "tripsFactory","tripsBorai","actualRemain","rawCull","rawCullTrucks","dest","note"];
+  "tripsFactory","tripsBorai","actualRemain","rawCull","rawCullTrucks","note"];
 function lockCarry(on){
   const c=$("carryOver");
   c.readOnly=on;
@@ -1013,10 +1010,14 @@ function applyUrlParams(){
   if(name){
     const nm=decodeURIComponent(name).trim();
     const sel=$("yard");
-    // ชื่อลานเทจาก SSB → เลือกในช่อง "ลาน" (ถ้าไม่มีในตัวเลือก เพิ่มให้)
+    // ชื่อลานเทจาก SSB → เลือก + ล็อกช่อง "ลาน" (ลานเทกรอกได้เฉพาะลานตัวเอง)
     let opt=[...sel.options].find(o=>o.value===nm);
     if(!opt){opt=document.createElement("option");opt.value=nm;opt.textContent=nm;sel.appendChild(opt);}
+    // เอาตัวเลือกอื่นออก เหลือแค่ลานตัวเอง แล้วปิดการเลือก
+    [...sel.options].forEach(o=>{if(o.value!==nm)o.remove();});
     sel.value=nm;
+    sel.disabled=true;
+    sel.classList.add("locked-yard");
     // ผู้บันทึกเว้นว่างให้กรอกเอง (ไม่เติมชื่อลาน)
   }
   if(uid){ window.__ssbUid=uid; }   // เก็บไว้เผื่ออ้างอิง
