@@ -751,12 +751,16 @@ function dayRowsHTML(d,closing){
     if(d.actualRemain!==""&&d.actualRemain!=null)h+=row("คงเหลือจริง (ชั่ง)",kg(d.actualRemain));
     if(d.weightLost)h+=row("น้ำหนักหาย (วันนี้)",kg(d.weightLost),"lost");
   }
-  if((d.pickups!==""&&d.pickups!=null)||d.note){
-    h+=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
-    if(d.pickups!==""&&d.pickups!=null)
-      h+=`<div class="pv-pickup">🛻 ต้องการรถรับปาล์ม <b>${d.pickups}</b> กระบะ</div>`;
-    if(d.note)h+=row("หมายเหตุ",d.note);
-  }
+  return h;
+}
+
+/* กล่องแจ้งรถรับปาล์ม (ขอรถ แยกจากยอดส่ง — ต่อท้ายสุดของรายงาน) */
+function pickupHTML(d){
+  if((d.pickups===""||d.pickups==null)&&!d.note)return "";
+  let h=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
+  if(d.pickups!==""&&d.pickups!=null)
+    h+=`<div class="pv-pickup">🛻 ต้องการรถรับปาล์ม <b>${d.pickups}</b> กระบะ</div>`;
+  if(d.note)h+=row("หมายเหตุ",d.note);
   return h;
 }
 
@@ -804,6 +808,7 @@ function buildPreview(){
       h+=`<div class="pv-contnote">ยืนยันแล้ว ระบบจะปิดรอบนี้ ถ้ามีซื้อใหม่กรอกต่อได้เลย</div>`;
     }
   }
+  h+=pickupHTML(d);   // แจ้งรถรับปาล์ม (ขอรถ) — ท้ายสุดของรายงานเสมอ
   $("pvBody").innerHTML=h;
   const comboT=combining?"ล้างลาน + ซื้อใหม่":(pendingClosing?"ปิดยอดรอบ (ล้างลาน)":"แจ้งรายวัน");
   $("pvTitle").textContent="ตรวจก่อนส่ง · "+comboT;
