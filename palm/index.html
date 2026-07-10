@@ -197,6 +197,11 @@
     border-radius:12px;padding:13px 15px;margin:6px 0 2px;font-family:"Anuphan",sans-serif;
     font-weight:700;font-size:1.05rem;color:var(--oil-ink);display:flex;align-items:center;gap:8px}
   .pv-pickup b{color:#b23a2e;font-size:1.4rem;margin:0 2px}
+  .pv-focus{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:6px 0 2px;
+    background:var(--oil-soft);border:2px solid var(--oil);border-radius:12px;padding:12px 16px}
+  .pv-focus .fl{font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.05rem;color:var(--oil-ink)}
+  .pv-focus .fv{font-family:"Anuphan",sans-serif;font-weight:700;font-size:1.6rem;color:#9a6a14;
+    font-variant-numeric:tabular-nums;line-height:1.1}
   .sheet-foot{display:flex;flex-direction:column;gap:8px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));
     border-top:1px solid var(--line);background:var(--card)}
   .sheet-foot .foot-row{display:flex;gap:10px}
@@ -745,9 +750,9 @@ function dayRowsHTML(d,closing){
   if(d.dest)h+=row("ปลายทาง",d.dest);
   h+=`<div class="pv-sec">ปิดยอด</div>`;
   if(closing){
-    h+=row("คงเหลือ (ล้างลาน)",kg(d.actualRemain===""||d.actualRemain==null?0:d.actualRemain),"hi oil");
+    h+=`<div class="pv-focus"><span class="fl">คงเหลือ (ล้างลาน)</span><span class="fv">${kg(d.actualRemain===""||d.actualRemain==null?0:d.actualRemain)}</span></div>`;
   }else{
-    h+=row("คงค้าง",kg(d.remaining||0),"hi oil");
+    h+=`<div class="pv-focus"><span class="fl">คงค้าง</span><span class="fv">${kg(d.remaining||0)}</span></div>`;
     if(d.actualRemain!==""&&d.actualRemain!=null)h+=row("คงเหลือจริง (ชั่ง)",kg(d.actualRemain));
     if(d.weightLost)h+=row("น้ำหนักหาย (วันนี้)",kg(d.weightLost),"lost");
   }
