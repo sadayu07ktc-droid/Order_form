@@ -305,10 +305,9 @@
         </div>
         <div class="field">
           <label for="yard">ลาน <span class="req">*</span></label>
+          <!-- ⭐ ลบ dropdown ลาน hardcode — ลานถูกล็อกจาก ?name= (อิง UID) โดย applyUrlParams() -->
           <select id="yard" name="yard" required>
-            <option value="" disabled selected>เลือกลาน</option>
-            <option>ห้วยสะท้อน</option><option>ชุมแสง</option><option>วัฒนานคร</option>
-            <option>วังรี</option><option>คลองกิ่ว</option><option>คลองหาด</option>
+            <option value="" disabled selected>— ระบุจากบัญชีลานอัตโนมัติ —</option>
           </select>
         </div>
         <div class="field full">
@@ -480,6 +479,12 @@
           <option value="9">9 กระบะ</option>
           <option value="10">10 กระบะ</option>
         </select>
+      </div>
+      <!-- ⭐ ช่องเวลานัดรับ — โชว์เมื่อเลือกจำนวนกระบะ (บังคับกรอกก่อนสั่งออเดอร์) -->
+      <div class="field full" id="pickupTimeField" hidden style="margin-top:12px">
+        <label for="pickupTime">เวลานัดรับ <span class="req">*</span></label>
+        <input type="time" id="pickupTime" />
+        <span class="err-text" id="pickupTimeErr">เลือกจำนวนกระบะแล้วต้องระบุเวลานัดรับ</span>
       </div>
       <div class="field full" style="margin-top:12px">
         <label for="note">หมายเหตุ</label>
@@ -713,7 +718,9 @@ function collect(){
     lostPct:parseFloat($("lostPct").value)||0,
     rawCull:num("rawCull"), rawCullTrucks:num("rawCullTrucks"),
     pickups:(closing||pickups==null)?"":pickups,
+    pickupTime:(closing||pickups==null)?"":$("pickupTime").value,   // 🆕 เวลานัดรับ
     note:closing?"":$("note").value.trim(),
+    uid:window.__ssbUid||"",                                        // 🆕 LINE UID ลานเท (อิงตัวตน)
     submittedAt:new Date().toISOString(),
   };
   if(closing){
@@ -775,8 +782,10 @@ function dayRowsHTML(d,closing){
 function pickupHTML(d){
   if((d.pickups===""||d.pickups==null)&&!d.note)return "";
   let h=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
-  if(d.pickups!==""&&d.pickups!=null)
+  if(d.pickups!==""&&d.pickups!=null){
     h+=`<div class="pv-pickup">🛻 ต้องการรถรับปาล์ม <b>${d.pickups}</b> กระบะ</div>`;
+    if(d.pickupTime)h+=row("เวลานัดรับ",d.pickupTime+" น.");   // 🆕
+  }
   if(d.note)h+=row("หมายเหตุ",d.note);
   return h;
 }
@@ -840,6 +849,13 @@ function buildPreview(){
 
 function openPreview(closing){
   if(!$("date").value||!$("yard").value){toast("กรอกวันที่และเลือกลานก่อน","err");return;}
+  if(!closing && pickups!=null && !$("pickupTime").value){          // 🆕 กระบะต้องมีเวลานัด
+    $("pickupTimeField").hidden=false;
+    $("pickupTimeErr").classList.add("show");
+    $("pickupTime").focus();
+    toast("เลือกจำนวนกระบะแล้ว ระบุเวลานัดรับด้วย","err");
+    return;
+  }
   pendingClosing=closing;
   $("isClear").checked=closing;
   buildPreview();
@@ -984,7 +1000,7 @@ function lockCarry(on){
   c.classList.toggle("locked-field",on);
   $("carryBtn").style.display=on?"none":"";   // ปิดปุ่มดึงยอดยกมาตอนล็อก
 }
-function softReset(){lockCarry(false);NUMFIELDS.forEach(id=>$(id).value="");$("newCycleBanner").classList.remove("show");lastClosed=null;pickups=null;renderPickups();recalc();}
+function softReset(){lockCarry(false);NUMFIELDS.forEach(id=>$(id).value="");$("pickupTime").value="";$("pickupTimeErr").classList.remove("show");$("newCycleBanner").classList.remove("show");lastClosed=null;pickups=null;renderPickups();recalc();}
 
 /* หลังปิดยอด → เริ่มรอบใหม่: ค้างลาน=0, เคลียร์ซื้อ, ปิด panel, พาไปกรอกซื้อใหม่ */
 function startNewCycle(){
@@ -1038,7 +1054,12 @@ $("sendOther").addEventListener("input",recalc);
 let pickups=null;   // ไม่ดีฟอลต์ — ผู้ใช้กดเลือกเอง (บางรอบไม่เรียกรถ)
 function renderPickups(){
   document.querySelectorAll("#pickupPills .pill-opt").forEach(b=>b.classList.remove("active"));
-  if(pickups==null){ $("pickupSelect").hidden=true; return; }
+  $("pickupTimeField").hidden = (pickups==null);        // 🆕 โชว์ช่องเวลาเมื่อเลือกกระบะ
+  if(pickups==null){
+    $("pickupSelect").hidden=true;
+    $("pickupTime").value=""; $("pickupTimeErr").classList.remove("show");   // 🆕 เคลียร์
+    return;
+  }
   if(pickups>=3){
     $("pickupMore").classList.add("active");
     $("pickupSelect").hidden=false; $("pickupSelect").value=String(pickups);
@@ -1059,6 +1080,7 @@ $("pickupPills").addEventListener("click",(e)=>{
   renderPickups();
 });
 $("pickupSelect").addEventListener("change",()=>{pickups=parseInt($("pickupSelect").value);renderPickups();});
+$("pickupTime").addEventListener("input",()=>$("pickupTimeErr").classList.remove("show"));   // 🆕 ล้าง error ตอนพิมพ์เวลา
 $("cycleFrom").addEventListener("change",recalcCycle);
 $("cycleTo").addEventListener("change",recalcCycle);
 
@@ -1083,7 +1105,7 @@ function applyUrlParams(){
     sel.classList.add("locked-yard");
     // ผู้บันทึกเว้นว่างให้กรอกเอง (ไม่เติมชื่อลาน)
   }
-  if(uid){ window.__ssbUid=uid; }   // เก็บไว้เผื่ออ้างอิง
+  if(uid){ window.__ssbUid=uid; }   // เก็บไว้เผื่ออ้างอิง + ส่งไปกับ payload
   recalc();
 }
 
