@@ -404,6 +404,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec';
 const LIFF_ID = '2010274217-BF41B8c2';
+const MAINTENANCE = true;   // 🔧 true = ปิดปรับปรุง (คนสั่งงานเห็นหน้าปิดระบบ) — แก้เสร็จเปลี่ยนเป็น false
 const DASHBOARD_URL = 'https://liff.line.me/2010274217-Ot7vGhri';   // SSB Dashboard (LIFF_ID_ADMIN)
 const PALM_DAILY_URL = 'https://sadayu07ktc-droid.github.io/Order_form/palm/';
 
@@ -449,8 +450,18 @@ function filterTime(dateId, timeId) {
   }
 }
 
+function showMaintenance(){
+  document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;background:linear-gradient(135deg,#2D5A27,#4A7C3F);color:#fff;gap:16px;font-family:'Sarabun',sans-serif">
+      <div style="font-size:64px">🔧</div>
+      <h1 style="font-size:24px;font-weight:700">ระบบปิดปรับปรุงชั่วคราว</h1>
+      <p style="font-size:15px;opacity:.92;line-height:1.9">กำลังพัฒนาระบบให้ดีขึ้น<br>ขออภัยในความไม่สะดวกครับ 🙏<br><br>ระหว่างนี้แจ้งสั่งงานผ่านแอดมินก่อนนะครับ</p>
+    </div>`;
+}
+
 // ── Init ──────────────────────────────────────────────────
 async function init() {
+  if(MAINTENANCE){ showMaintenance(); return; }
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) { liff.login(); return; }
