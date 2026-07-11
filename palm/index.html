@@ -918,6 +918,19 @@ function openPreview(closing){
 }
 function closePreview(){$("previewModal").classList.remove("show");}
 
+/* ---- ยิงข้อมูลลานรายวันไป SSB (แจ้งแอดมิน + สร้างออเดอร์) ---- */
+function _fireRampDaily(closing, payload){
+  if(closing) return;                 // ปิดยอด: ไม่ส่งเดี่ยว รอส่งรวมตอนซื้อใหม่ (กันส่งซ้ำ)
+  const p = { action:"rampDaily", ...payload };
+  if(lastClosed){                     // ซื้อใหม่หลังล้างลาน → รวม 3 ส่วนในข้อความเดียว
+    p.combined = { day: lastClosed.day, cycle: {
+      cycleId:lastClosed.cycleId, from:lastClosed.from, to:lastClosed.to,
+      buy:lastClosed.buy, ship:lastClosed.ship, lost:lastClosed.lost, lostPct:lastClosed.pct, days:lastClosed.days
+    }};
+  }
+  try{ fetch(SSB_URL, { method:"POST", body: JSON.stringify(p) }); }catch(_){}
+}
+
 /* ---- บันทึกจริง ---- */
 let saving=false;
 async function saveData(closing){
@@ -931,8 +944,7 @@ async function saveData(closing){
   const payload=collect();
   try{
     await post(payload);
-    // 🆕 ยิงไป SSB: ส่งรายงานแอดมิน + สร้างออเดอร์ (ถ้ามีกระบะ) — ไม่รอผล
-    try { fetch(SSB_URL, { method:"POST", body: JSON.stringify({ action:"rampDaily", ...payload }) }); } catch(_){}
+    _fireRampDaily(closing, payload);   // 🆕 ยิงไป SSB (รายงานแอดมิน + สร้างออเดอร์)
     if(closing){
       toast(`ปิดยอดรอบ ${payload.yard} แล้ว ✓`,"ok");
       const closedId=cycleFetched.cycleId, dz=cycleDays();
