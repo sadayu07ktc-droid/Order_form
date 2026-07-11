@@ -552,6 +552,8 @@
 <script>
 /* ====== ตั้งค่า: วาง URL ของ Apps Script Web App (ลงท้าย /exec) ====== */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsoiwDfxmeD7B1jamcZ-JVfEGBqK40dlJ4yfQK4JwQEPcF415xHUXWsQhJRUy94Zny/exec";
+/* 🆕 SSB /exec (webhook หลัก) — แจ้งแอดมิน + สร้างออเดอร์รับปาล์ม */
+const SSB_URL = "ใส่_URL_/exec_ของ_SSB";
 
 const QUEUE_KEY = "palmQueue_v2";
 const $ = (id)=>document.getElementById(id);
@@ -929,6 +931,8 @@ async function saveData(closing){
   const payload=collect();
   try{
     await post(payload);
+    // 🆕 ยิงไป SSB: ส่งรายงานแอดมิน + สร้างออเดอร์ (ถ้ามีกระบะ) — ไม่รอผล
+    try { fetch(SSB_URL, { method:"POST", body: JSON.stringify({ action:"rampDaily", ...payload }) }); } catch(_){}
     if(closing){
       toast(`ปิดยอดรอบ ${payload.yard} แล้ว ✓`,"ok");
       const closedId=cycleFetched.cycleId, dz=cycleDays();
