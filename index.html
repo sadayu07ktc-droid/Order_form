@@ -404,8 +404,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw4UvKuRrAQ_3Ldm8U0VJqfjfBQUSYaTEdrxkdXUVN98G68XseCquhDeXfMgU8cVYaY/exec';
 const LIFF_ID = '2010274217-BF41B8c2';
-const MAINTENANCE = false;   // 🔧 true = ปิดปรับปรุง (คนสั่งงานเห็นหน้าปิดระบบ) — เปิดทดสอบแล้ว
-const MAINT_ALLOW = ['U242c178eb911a0cd494bc20a6878c93b','U2206e7627de1cd1de2ffe4abc93fc312'];   // UID ที่เข้าได้ตอนปิดปรับปรุง (เทส)
+// 🔧 ปิด-เปิดปรับปรุง ย้ายไปคุมที่ Script Property MAINT_ORDER (on/off) + MAINT_ALLOW_ROLES/UIDS
+//    เช็คผ่าน backend action=getMaintenance ใน init() แล้ว — ไม่ต้องแก้ไฟล์นี้อีก
 const DASHBOARD_URL = 'https://liff.line.me/2010274217-Ot7vGhri';   // SSB Dashboard (LIFF_ID_ADMIN)
 const PALM_DAILY_URL = 'https://sadayu07ktc-droid.github.io/Order_form/palm/';
 
@@ -467,8 +467,11 @@ async function init() {
     if (!liff.isLoggedIn()) { liff.login(); return; }
     const p = await liff.getProfile();
     U.userId = p.userId;
-    // ✅ ปิดปรับปรุง: ให้เฉพาะ UID ในลิสต์เข้าได้ ที่เหลือเห็นหน้าปิดระบบ
-    if(MAINTENANCE && !MAINT_ALLOW.includes(U.userId)){ showMaintenance(); return; }
+    // ✅ ปิดปรับปรุง: เช็คจาก backend (Script Property MAINT_ORDER + ยกเว้นตามโรล/UID)
+    try {
+      const _m = await (await fetch(`${GAS_URL}?action=getMaintenance&page=order&userId=${U.userId}`)).json();
+      if (_m && _m.closed) { showMaintenance(); return; }
+    } catch(e) { /* เช็คไม่ได้ (network) → ปล่อยผ่าน ไม่ล็อกคนเพราะเน็ต */ }
 
     const today = new Date().toISOString().split('T')[0];
     ['inp-date', 'inp-date-o'].forEach(id => {
