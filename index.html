@@ -39,6 +39,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .hint{font-size:11px;padding:6px 10px;border-radius:0 6px 6px 0;margin-bottom:14px}
 .hw{background:#EFE9DC;border-left:3px solid var(--brown-l);color:var(--brown)}
 .hi{background:var(--green-pale);border-left:3px solid var(--green);color:var(--green-d)}
+.tg-note{font-size:11px;margin-top:6px;color:var(--text-m)}
+.tg-note.warn{color:var(--red);font-weight:600}
 .card{background:var(--cream3);border:.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;position:relative}
 .card-admin{background:var(--indigo-l);border:.5px solid rgba(79,70,229,.3);border-radius:12px;padding:14px;margin-bottom:12px;position:relative}
 .stitle{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--brown);display:flex;align-items:center;gap:6px;margin-bottom:12px}
@@ -197,6 +199,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
           <select class="inp" id="inp-garden" onchange="onGardenChange()">
             <option value="">-- เลือกสวน --</option>
           </select>
+          <div class="tg-note hide" id="team-garden-note"></div>
         </div>
         <div class="fld"><label>ชื่อในบิล <span class="req">*</span></label>
           <select class="inp" id="inp-bill"><option value="">-- เลือกชื่อ --</option></select>
@@ -560,8 +563,10 @@ function _setup(u, g) {
   } else if (u.role === 'Team') {
     document.getElementById('uname').textContent = u.name;
     document.getElementById('usub').textContent  = `${u.phone} · ${u.teamId || ''}`;
-    _fillGardens(g.gardens || []);
-    _initGardenSearch();
+    // เดิมโชว์สวนทั้งหมด → ทีมสั่งงานให้สวนที่ตัวเองไม่ได้ตัดได้
+    // เปลี่ยนเป็นเฉพาะสวนที่ผูกทีมนี้ไว้ในฐาน (หลังบ้านก็เช็คซ้ำอีกชั้น)
+    _fillGardens([]);
+    _loadTeamGardens();   // เติมรายการ + init Tom Select ให้เองหลังโหลดเสร็จ
 
     U.teamId = u.teamId || '';
     const teamSel = document.getElementById('inp-team');
@@ -1102,6 +1107,49 @@ function _fillGardens(gs) {
     o.dataset.teamId   = g.teamId      || '';
     sel.appendChild(o);
   });
+}
+
+// ── ทีมตัด: โหลดเฉพาะสวนที่ผูกทีมนี้ไว้ ────────────────────
+// ผูกที่หน้าข้อมูลสวน (ช่อง "ทีมตัด") ไม่มีหน้าตั้งค่าสิทธิ์แยก — จุดตั้งค่าเดียว
+async function _loadTeamGardens() {
+  const note = document.getElementById('team-garden-note');
+  try {
+    const r = await fetch(`${GAS_URL}?action=getTeamGardens&userId=${encodeURIComponent(U.userId)}`).then(x => x.json());
+    if (!r || !r.ok) throw new Error((r && r.error) || 'โหลดไม่สำเร็จ');
+
+    // แปลงให้ตรงรูปแบบที่ _fillGardens/onGardenChange ใช้อยู่แล้ว
+    const gardens = (r.gardens || []).map(x => ({
+      id: x.code,
+      name: x.name,
+      billNames: x.bills || [],
+      pickups: (x.pickups || []).map(p => ({ name: p.name, rspo: p.rspo, location: p.loc })),
+      location: x.loc || '',
+      rspo: x.rspo || 'ไม่มี',
+      teamId: (r.team && r.team.code) || ''
+    }));
+
+    _fillGardens(gardens);
+    _initGardenSearch();
+
+    if (!gardens.length) {
+      note.textContent = 'ยังไม่มีสวนที่ผูกกับทีมของคุณ กรุณาแจ้งแอดมินให้ผูกสวนก่อนครับ';
+      note.className = 'tg-note warn';
+    } else if (gardens.length === 1) {
+      // มีสวนเดียว เลือกให้เลย ไม่ต้องให้กด
+      if (gardenTS) gardenTS.setValue(gardens[0].id); else { document.getElementById('inp-garden').value = gardens[0].id; onGardenChange(); }
+      note.textContent = `สวนที่ทีมคุณดูแล: ${gardens[0].name}`;
+      note.className = 'tg-note';
+    } else {
+      note.textContent = `ทีมคุณดูแล ${gardens.length} สวน — เลือกสวนที่จะสั่งงาน`;
+      note.className = 'tg-note';
+    }
+    note.classList.remove('hide');
+  } catch (e) {
+    console.error('_loadTeamGardens', e);
+    note.textContent = 'โหลดรายชื่อสวนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+    note.className = 'tg-note warn';
+    note.classList.remove('hide');
+  }
 }
 
 // ✅ แปลงช่องเลือกสวนเป็น dropdown ค้นหาได้ (Tom Select)
