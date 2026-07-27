@@ -503,9 +503,12 @@
           <option value="23:00">23:00 น.</option>
         </select>
         <span class="err-text" id="pickupTimeErr">เลือกจำนวนกระบะแล้วต้องระบุเวลานัดรับ</span>
+        <label for="pickupDate" style="margin-top:12px">วันนัดรับ <span class="req">*</span></label>
+        <input type="date" id="pickupDate">
+        <span class="err-text" id="pickupDateErr">เลือกวันนัดรับด้วย</span>
         <div class="moved-note" id="pickupDateNote" style="margin-top:8px">
-          🗓️ รับ <b>วันพรุ่งนี้</b> · <span id="pickupDateText">—</span>
-          <span style="font-weight:400;color:var(--muted)">(นัดหลังปิดลานวันนี้)</span>
+          🗓️ รับ <b id="pickupDateText">—</b>
+          <span style="font-weight:400;color:var(--muted)">(ดีฟอลต์พรุ่งนี้ · เปลี่ยนวันได้)</span>
         </div>
       </div>
       <div class="field full" style="margin-top:12px">
@@ -576,8 +579,11 @@ function addDaysStr(dateStr,n){
   return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
 }
 function updatePickupDate(){
-  const t=addDaysStr($("date").value,1);
-  const el=$("pickupDateText"); if(el)el.textContent=t?thDate(t):"—";
+  const inp=$("pickupDate"); if(!inp)return;
+  const tomorrow=addDaysStr($("date").value,1);
+  if(!inp.value && tomorrow) inp.value=tomorrow;         // ดีฟอลต์ = พรุ่งนี้ (ถ้ายังไม่เลือกเอง)
+  if($("date").value) inp.min=$("date").value;           // เลือกก่อนวันกรอกไม่ได้
+  const el=$("pickupDateText"); if(el)el.textContent=inp.value?thDate(inp.value):"—";
 }
 
 /* ---- คำนวณหลัก ---- */
@@ -755,7 +761,7 @@ function collect(){
     rawCull:num("rawCull"), rawCullTrucks:num("rawCullTrucks"),
     pickups:(closing||pickups==null)?"":pickups,
     pickupTime:(closing||pickups==null)?"":$("pickupTime").value,   // 🆕 เวลานัดรับ
-    pickupDate:(closing||pickups==null)?"":addDaysStr($("date").value,1),   // 🆕 วันรับ = พรุ่งนี้
+    pickupDate:(closing||pickups==null)?"":($("pickupDate").value||addDaysStr($("date").value,1)),   // 🆕 วันรับ = ที่เลือก (ดีฟอลต์พรุ่งนี้)
     note:closing?"":$("note").value.trim(),
     uid:window.__ssbUid||"",                                        // 🆕 LINE UID ลานเท (อิงตัวตน)
     submittedAt:new Date().toISOString(),
@@ -821,7 +827,7 @@ function pickupHTML(d){
   let h=`<div class="pv-sec">แจ้งรถรับปาล์ม</div>`;
   if(d.pickups!==""&&d.pickups!=null){
     h+=`<div class="pv-pickup">🛻 ต้องการรถรับปาล์ม <b>${d.pickups}</b> กระบะ</div>`;
-    if(d.pickupDate)h+=row("วันนัดรับ","พรุ่งนี้ "+thAny(d.pickupDate));   // 🆕
+    if(d.pickupDate)h+=row("วันนัดรับ",thAny(d.pickupDate));   // 🆕 วันที่เลือก
     if(d.pickupTime)h+=row("เวลานัดรับ",d.pickupTime+" น.");   // 🆕
   }
   if(d.note)h+=row("หมายเหตุ",d.note);
@@ -892,6 +898,13 @@ function openPreview(closing){
     $("pickupTimeErr").classList.add("show");
     $("pickupTime").focus();
     toast("เลือกจำนวนกระบะแล้ว ระบุเวลานัดรับด้วย","err");
+    return;
+  }
+  if(!closing && pickups!=null && !$("pickupDate").value){          // 🆕 กระบะต้องมีวันนัดรับ
+    $("pickupTimeField").hidden=false;
+    $("pickupDateErr").classList.add("show");
+    $("pickupDate").focus();
+    toast("เลือกวันนัดรับด้วย","err");
     return;
   }
   if(closing){                                                      // 🆕 ปิดยอด = บังคับสรุปรอบครบ
@@ -1069,7 +1082,7 @@ function lockCarry(on){
   c.classList.toggle("locked-field",on);
   $("carryBtn").style.display=on?"none":"";   // ปิดปุ่มดึงยอดยกมาตอนล็อก
 }
-function softReset(){lockCarry(false);NUMFIELDS.forEach(id=>$(id).value="");$("pickupTime").value="";$("pickupTimeErr").classList.remove("show");$("newCycleBanner").classList.remove("show");lastClosed=null;pickups=null;renderPickups();recalc();}
+function softReset(){lockCarry(false);NUMFIELDS.forEach(id=>$(id).value="");$("pickupTime").value="";$("pickupTimeErr").classList.remove("show");$("pickupDate").value="";$("pickupDateErr").classList.remove("show");$("newCycleBanner").classList.remove("show");lastClosed=null;pickups=null;renderPickups();recalc();}
 
 /* หลังปิดยอด → เริ่มรอบใหม่: ค้างลาน=0, เคลียร์ซื้อ, ปิด panel, พาไปกรอกซื้อใหม่ */
 function startNewCycle(){
@@ -1151,6 +1164,7 @@ $("pickupPills").addEventListener("click",(e)=>{
 });
 $("pickupSelect").addEventListener("change",()=>{pickups=parseInt($("pickupSelect").value);renderPickups();});
 $("pickupTime").addEventListener("change",()=>$("pickupTimeErr").classList.remove("show"));   // 🆕 ล้าง error ตอนเลือกเวลา
+$("pickupDate").addEventListener("change",()=>{$("pickupDateErr").classList.remove("show");updatePickupDate();});   // 🆕 เปลี่ยนวันนัดรับ → อัปเดตป้าย
 $("cycleFrom").addEventListener("change",recalcCycle);
 $("cycleTo").addEventListener("change",recalcCycle);
 
