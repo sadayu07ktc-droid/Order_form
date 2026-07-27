@@ -104,6 +104,29 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
   <button class="btn-close" onclick="liff.closeWindow()">ปิดหน้าต่าง</button>
 </div>
 
+<div id="pvModal" class="pvov"></div>
+<style>
+.pvov{position:fixed;inset:0;background:rgba(20,30,18,.55);display:none;align-items:flex-end;justify-content:center;z-index:60}
+.pvov.show{display:flex}
+.pvbox{background:#fff;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.25);animation:pvup .2s ease}
+@keyframes pvup{from{transform:translateY(30px)}to{transform:none}}
+.pvhd{background:linear-gradient(135deg,var(--green-d),var(--green));color:#fff;padding:15px 18px;border-radius:18px 18px 0 0;position:sticky;top:0}
+.pvhd h3{font-size:17px;font-weight:700;margin:0}
+.pvhd p{font-size:12px;color:var(--green-l);margin:3px 0 0}
+.pvbody{padding:10px 16px 4px}
+.pvrow{display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px dashed var(--border);font-size:14px}
+.pvrow .k{color:#6a7566;flex:none}
+.pvrow .v{font-weight:600;color:#1d2a17;text-align:right}
+.pvdate{background:var(--green-pale);border:1.5px solid var(--green);border-radius:12px;padding:11px 13px;margin:4px 0 8px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pvdate .k{font-size:12.5px;color:var(--green-d);font-weight:600}
+.pvdate .v{font-size:16px;font-weight:800;color:var(--green-d);text-align:right}
+.pvwarn{font-size:12px;color:#9a5a06;background:#FFF6E5;border-radius:9px;padding:9px 11px;margin:10px 2px 2px;line-height:1.6}
+.pvacts{position:sticky;bottom:0;background:#fff;display:flex;gap:10px;padding:12px 16px 16px;border-top:1px solid var(--border)}
+.pvbtn{flex:1;padding:13px;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:none}
+.pvbtn.edit{background:#fff;border:1.5px solid var(--border);color:#4a5548;flex:0 0 42%}
+.pvbtn.go{background:var(--green);color:#fff}
+</style>
+
 <div class="hdr">
   <div class="hdr-logo">🌴</div>
   <div><h1>แจ้งรับงานขนส่ง</h1><p>SSB Smart Supply</p></div>
@@ -1647,6 +1670,12 @@ async function submitForm() {
     });
   }
 
+  // 👁️ พรีวิวก่อนส่งทุกครั้ง — กันวันที่/รายละเอียดผิด
+  openOrderPreview(payload, isAdmin);
+}
+
+// ยิงส่งจริง (หลังผู้ใช้ยืนยันในหน้าพรีวิว)
+async function doSubmit(payload, isAdmin) {
   document.getElementById('overlay').classList.add('show');
   document.getElementById('btn-sub').disabled = true;
 
@@ -1675,6 +1704,56 @@ async function submitForm() {
     alert('❌ เชื่อมต่อไม่ได้');
     document.getElementById('btn-sub').disabled = false;
   }
+}
+
+// ── หน้าพรีวิวก่อนส่ง ──────────────────────────────────────────
+const _escP = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function _pvDate(v){
+  const s=String(v||'').trim(), m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return s||'—';
+  const dt=new Date(+m[1],+m[2]-1,+m[3]);
+  const dow=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const mon=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return 'วัน'+dow[dt.getDay()]+' '+(+m[3])+' '+mon[+m[2]-1]+' '+m[1];
+}
+function closeOrderPreview(){ document.getElementById('pvModal').classList.remove('show'); }
+function openOrderPreview(payload, isAdmin){
+  const p=payload, rows=[];
+  const add=(k,v)=>{ if(v!==undefined&&v!==null&&String(v).trim()!=='') rows.push(`<div class="pvrow"><span class="k">${k}</span><span class="v">${_escP(v)}</span></div>`); };
+  add('ประเภทงาน', p.jobType);
+  add(p.jobType==='ปาล์ม'?'สวน':'ปลายทาง', p.gardenName||p.gardenId);
+  add('จุดรับ', p.pickupPoint);
+  if(p.jobType==='ปาล์ม'){
+    add('จำนวนกระบะ', p.binCount?(p.binCount+' ใบ'):'');
+    add('ชื่อในบิล', p.billName);
+    if(p.teamId && p.teamId!=='ไม่มี') add('ทีมตัด', p.teamId);
+    add('RSPO', p.rspo);
+  } else if(p.items && p.items.length){
+    const its=p.items.map(it=>`${_escP(it.goodsType)} ${_escP(it.qty)} ${_escP(it.unit)}`).join('<br>');
+    rows.push(`<div class="pvrow"><span class="k">สินค้า</span><span class="v">${its}</span></div>`);
+  }
+  let noteShow=p.note||'';
+  if(p.jobType!=='ปาล์ม'){ const bar=noteShow.indexOf('| '); noteShow = bar>=0 ? noteShow.slice(bar+2) : ''; }
+  add('หมายเหตุ', noteShow);
+  if(isAdmin && p.dispatchMode==='assign') add('มอบหมายคนขับ', (p.driverName||'')+(p.plate?(' · '+p.plate):''));
+  if(isAdmin && p.dispatchMode==='flex')   add('การจ่ายงาน', '📢 Broadcast หาคนขับ');
+
+  const box=`<div class="pvbox">
+    <div class="pvhd"><h3>ตรวจทานก่อนส่ง</h3><p>เช็ควันที่ · รายละเอียดให้ถูกต้อง แล้วกดยืนยัน</p></div>
+    <div class="pvbody">
+      <div class="pvdate"><span class="k">📅 วันที่ต้องการรถ</span><span class="v">${_escP(_pvDate(p.date))}</span></div>
+      <div class="pvrow"><span class="k">⏰ เวลา</span><span class="v">${_escP(p.time||'—')} น.</span></div>
+      ${rows.join('')}
+      <div class="pvwarn">⚠️ ส่งแล้วแอดมิน/คนขับจะเห็นทันที — ถ้า<b>วันที่</b>หรือรายละเอียดผิด กด "‹ กลับไปแก้"</div>
+    </div>
+    <div class="pvacts">
+      <button class="pvbtn edit" onclick="closeOrderPreview()">‹ กลับไปแก้</button>
+      <button class="pvbtn go" id="pvGo">✓ ยืนยันส่ง</button>
+    </div>
+  </div>`;
+  const m=document.getElementById('pvModal');
+  m.innerHTML=box; m.classList.add('show');
+  document.getElementById('pvGo').onclick=()=>{ closeOrderPreview(); doSubmit(payload, isAdmin); };
 }
 
 init();
