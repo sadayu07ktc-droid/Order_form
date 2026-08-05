@@ -487,42 +487,48 @@ function showMaintenance(){
 }
 
 // ── Init ──────────────────────────────────────────────────
+function _lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function _lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
 async function init() {
+  // ตั้งค่าช่องวันที่ (DOM-only ไม่ต้องรอ uid)
+  const today = new Date().toISOString().split('T')[0];
+  ['inp-date', 'inp-date-o'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    el.min = today;
+    el.addEventListener('change', () => { if (id === 'inp-date') filterTime('inp-date', 'inp-time'); else filterTime('inp-date-o', 'inp-time-o'); });
+  });
+  filterTime('inp-date', 'inp-time');
+  filterTime('inp-date-o', 'inp-time-o');
+
+  // ⚡ จำ uid เดิม → ยิง maintenance+user+garden ทันที (ขนานกับ LIFF init) ไม่รอ LINE เสร็จก่อน
+  const cachedUid = _lsGet('ssb_ord_uid');
+  let pre = cachedUid ? loadOrderForm(cachedUid) : null;
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) { liff.login(); return; }
     const p = await liff.getProfile();
-    U.userId = p.userId;
-    // ✅ ปิดปรับปรุง: เช็คจาก backend (Script Property MAINT_ORDER + ยกเว้นตามโรล/UID)
-    try {
-      const _m = await (await fetch(`${GAS_URL}?action=getMaintenance&page=order&userId=${U.userId}`)).json();
-      if (_m && _m.closed) { showMaintenance(); return; }
-    } catch(e) { /* เช็คไม่ได้ (network) → ปล่อยผ่าน ไม่ล็อกคนเพราะเน็ต */ }
-
-    const today = new Date().toISOString().split('T')[0];
-    ['inp-date', 'inp-date-o'].forEach(id => {
-      const el = document.getElementById(id);
-      el.min = today;
-      el.addEventListener('change', () => {
-        if (id === 'inp-date') filterTime('inp-date', 'inp-time');
-        else filterTime('inp-date-o', 'inp-time-o');
-      });
-    });
-    filterTime('inp-date', 'inp-time');
-    filterTime('inp-date-o', 'inp-time-o');
-
-    const [uRes, gRes] = await Promise.all([
-      fetch(`${GAS_URL}?action=getUser&userId=${p.userId}`).then(r => r.json()),
-      fetch(`${GAS_URL}?action=getGardenData&userId=${p.userId}`).then(r => r.json())
-    ]);
-    gData = gRes;
-    _fillTeams(gRes.teams || []);
-    if (uRes.status === 'ok') _setup(uRes, gRes);
-    else document.getElementById('uname').textContent = p.displayName;
+    U.userId = p.userId; U.displayName = p.displayName; _lsSet('ssb_ord_uid', p.userId);
+    if (pre && cachedUid === p.userId) { await pre; }   // uid ตรง → ใช้ผลที่โหลดขนานไปแล้ว
+    else { await loadOrderForm(p.userId); }              // uid เปลี่ยน/ไม่มี cache → โหลดด้วย uid จริง
   } catch(e) {
     console.error(e);
-    document.getElementById('uname').textContent = '⚠️ โหลดไม่สำเร็จ';
+    if (!pre) document.getElementById('uname').textContent = '⚠️ โหลดไม่สำเร็จ';
   }
+}
+
+async function loadOrderForm(uid) {
+  U.userId = uid;
+  const [m, uRes, gRes] = await Promise.all([
+    fetch(`${GAS_URL}?action=getMaintenance&page=order&userId=${uid}`).then(r => r.json()).catch(() => null),
+    fetch(`${GAS_URL}?action=getUser&userId=${uid}`).then(r => r.json()),
+    fetch(`${GAS_URL}?action=getGardenData&userId=${uid}`).then(r => r.json())
+  ]);
+  if (m && m.closed) { showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ
+  gData = gRes;
+  _fillTeams(gRes.teams || []);
+  if (uRes.status === 'ok') _setup(uRes, gRes);
+  else document.getElementById('uname').textContent = U.displayName || '';
 }
 
 // ── Setup UI ──────────────────────────────────────────────
