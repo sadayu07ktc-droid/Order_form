@@ -513,16 +513,30 @@ async function init() {
     else { await loadOrderForm(p.userId); }              // uid เปลี่ยน/ไม่มี cache → โหลดด้วย uid จริง
   } catch(e) {
     console.error(e);
-    if (!pre) document.getElementById('uname').textContent = '⚠️ โหลดไม่สำเร็จ';
+    // ⚠️ ต้องโชว์เสมอ (เดิม `if(!pre)` ทำให้ returning user ที่ preload พัง ค้าง "กำลังโหลด" ถาวร)
+    const el = document.getElementById('uname');
+    el.textContent = '⚠️ โหลดไม่สำเร็จ — แตะเพื่อลองใหม่';
+    el.style.cursor = 'pointer';
+    el.onclick = () => location.reload();
   }
+}
+
+// GAS /exec เด้ง error/HTML ชั่วคราวเป็นบางครั้ง (โดยเฉพาะหลัง redeploy) → retry กัน r.json() พังแล้วค้าง
+async function _fetchJSON(url, tries = 3) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try { const r = await fetch(url); return await r.json(); }
+    catch (e) { lastErr = e; if (i < tries - 1) await new Promise(res => setTimeout(res, 400 * (i + 1))); }
+  }
+  throw lastErr;
 }
 
 async function loadOrderForm(uid) {
   U.userId = uid;
   const [m, uRes, gRes] = await Promise.all([
-    fetch(`${GAS_URL}?action=getMaintenance&page=order&userId=${uid}`).then(r => r.json()).catch(() => null),
-    fetch(`${GAS_URL}?action=getUser&userId=${uid}`).then(r => r.json()),
-    fetch(`${GAS_URL}?action=getGardenData&userId=${uid}`).then(r => r.json())
+    _fetchJSON(`${GAS_URL}?action=getMaintenance&page=order&userId=${uid}`, 1).catch(() => null),
+    _fetchJSON(`${GAS_URL}?action=getUser&userId=${uid}`),
+    _fetchJSON(`${GAS_URL}?action=getGardenData&userId=${uid}`)
   ]);
   if (m && m.closed) { showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ
   gData = gRes;
