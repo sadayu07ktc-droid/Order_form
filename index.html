@@ -643,11 +643,13 @@ function _setup(u, g) {
 // ── Admin Data ────────────────────────────────────────────
 async function _loadAdminData(g) {
   try {
+    // ⚡ ใช้ _fetchJSON (retry 3 ครั้ง) + catch รายตัว → ตัวใดพลาดก็ไม่ทำให้ทั้งชุดพัง
+    //    (เดิม fetch ดิบไม่มี retry/catch → พลาดตัวเดียว Promise.all reject → ดรอปดาวน์ว่างทั้งหมด)
     const [ordRes, drvRes, childRes, vehRes] = await Promise.all([
-      fetch(`${GAS_URL}?action=getPendingOrders`).then(r => r.json()),
-      fetch(`${GAS_URL}?action=getAvailableDrivers`).then(r => r.json()),
-      fetch(`${GAS_URL}?action=getAvailableTrailerChildren`).then(r => r.json()),
-      fetch(`${GAS_URL}?action=getAvailableVehicles`).then(r => r.json())
+      _fetchJSON(`${GAS_URL}?action=getPendingOrders`).catch(() => ({})),
+      _fetchJSON(`${GAS_URL}?action=getAvailableDrivers`).catch(() => ({})),
+      _fetchJSON(`${GAS_URL}?action=getAvailableTrailerChildren`).catch(() => ({})),
+      _fetchJSON(`${GAS_URL}?action=getAvailableVehicles`).catch(() => ({}))
     ]);
     window._rampUids     = (g.ramps || []).map(r => r.uid).filter(Boolean);
     window._freeChildren = childRes.children || [];
