@@ -533,15 +533,25 @@ async function _fetchJSON(url, tries = 3) {
 
 async function loadOrderForm(uid) {
   U.userId = uid;
-  const [m, uRes, gRes] = await Promise.all([
-    _fetchJSON(`${GAS_URL}?action=getMaintenance&page=order&userId=${uid}`, 1).catch(() => null),
-    _fetchJSON(`${GAS_URL}?action=getUser&userId=${uid}`),
-    _fetchJSON(`${GAS_URL}?action=getGardenData&userId=${uid}`)
-  ]);
+  let m, uRes, gRes, preAdmin = null;
+  try {
+    // 🔗 รวมทุก call เป็นก้อนเดียว (ลด round-trip GAS 3-7 → 1)
+    const b = await _fetchJSON(`${GAS_URL}?action=getOrderFormBundle&userId=${uid}`);
+    if (!b || !b.user) throw new Error('bundle ไม่สมบูรณ์');
+    m = b.maintenance; uRes = b.user; gRes = b.garden || {}; preAdmin = b.admin || null;
+  } catch (e) {
+    // ทางถอย: ยิงแยกแบบเดิม (กันหน้าเปล่าถ้า bundle พัง)
+    console.warn('bundle fail → fallback แยก call:', e);
+    [m, uRes, gRes] = await Promise.all([
+      _fetchJSON(`${GAS_URL}?action=getMaintenance&page=order&userId=${uid}`, 1).catch(() => null),
+      _fetchJSON(`${GAS_URL}?action=getUser&userId=${uid}`),
+      _fetchJSON(`${GAS_URL}?action=getGardenData&userId=${uid}`)
+    ]);
+  }
   if (m && m.closed) { showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ
   gData = gRes;
   _fillTeams(gRes.teams || []);
-  if (uRes.status === 'ok') _setup(uRes, gRes);
+  if (uRes.status === 'ok') _setup(uRes, gRes, preAdmin);
   else document.getElementById('uname').textContent = U.displayName || '';
 }
 
@@ -552,7 +562,7 @@ const roleCardCls = { Owner:'uc-g', Team:'uc-g', Ramp:'uc-b', Admin:'uc-i', ADMI
 const roleAvCls   = { Owner:'av-g', Team:'av-g', Ramp:'av-b', Admin:'av-i', ADMIN_PK:'av-i' };
 const roleBgCls   = { Owner:'bg-g', Team:'bg-g', Ramp:'bg-b', Admin:'bg-i', ADMIN_PK:'bg-i' };
 
-function _setup(u, g) {  
+function _setup(u, g, preAdmin) {
   U = { ...U, ...u };
   userRole = u.role;
 
@@ -602,7 +612,7 @@ function _setup(u, g) {
     document.getElementById('card-assign').classList.remove('hide');
     _fillGardens(g.gardens || []);
     _initGardenSearch();
-    _loadAdminData(g);
+    _loadAdminData(g, preAdmin);
   } else if (u.role === 'Team') {
     document.getElementById('uname').textContent = u.name;
     document.getElementById('usub').textContent  = `${u.phone} · ${u.teamId || ''}`;
@@ -641,16 +651,24 @@ function _setup(u, g) {
 }
 
 // ── Admin Data ────────────────────────────────────────────
-async function _loadAdminData(g) {
+async function _loadAdminData(g, pre) {
   try {
-    // ⚡ ใช้ _fetchJSON (retry 3 ครั้ง) + catch รายตัว → ตัวใดพลาดก็ไม่ทำให้ทั้งชุดพัง
-    //    (เดิม fetch ดิบไม่มี retry/catch → พลาดตัวเดียว Promise.all reject → ดรอปดาวน์ว่างทั้งหมด)
-    const [ordRes, drvRes, childRes, vehRes] = await Promise.all([
-      _fetchJSON(`${GAS_URL}?action=getPendingOrders`).catch(() => ({})),
-      _fetchJSON(`${GAS_URL}?action=getAvailableDrivers`).catch(() => ({})),
-      _fetchJSON(`${GAS_URL}?action=getAvailableTrailerChildren`).catch(() => ({})),
-      _fetchJSON(`${GAS_URL}?action=getAvailableVehicles`).catch(() => ({}))
-    ]);
+    let ordRes, drvRes, childRes, vehRes;
+    if (pre) {
+      // ⚡ ได้จาก bundle แล้ว (โหลดหน้ารอบเดียว) — ไม่ต้องยิงซ้ำ
+      ordRes   = pre.pending || {};
+      drvRes   = pre.drivers || {};
+      childRes = pre.trailerChildren || {};
+      vehRes   = pre.vehicles || {};
+    } else {
+      // ทางถอย: ยิงแยกแบบเดิม (retry 3 + catch รายตัว → ตัวใดพลาดก็ไม่ล้มทั้งชุด)
+      [ordRes, drvRes, childRes, vehRes] = await Promise.all([
+        _fetchJSON(`${GAS_URL}?action=getPendingOrders`).catch(() => ({})),
+        _fetchJSON(`${GAS_URL}?action=getAvailableDrivers`).catch(() => ({})),
+        _fetchJSON(`${GAS_URL}?action=getAvailableTrailerChildren`).catch(() => ({})),
+        _fetchJSON(`${GAS_URL}?action=getAvailableVehicles`).catch(() => ({}))
+      ]);
+    }
     window._rampUids     = (g.ramps || []).map(r => r.uid).filter(Boolean);
     window._freeChildren = childRes.children || [];
     window._vehicleGroups = vehRes.groups || [];   // ✅ รถว่างทุกประเภท (สำหรับยืมรถคันอื่น)
