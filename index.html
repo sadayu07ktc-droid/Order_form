@@ -1696,34 +1696,59 @@ async function submitForm() {
   openOrderPreview(payload, isAdmin);
 }
 
+// 🔁 กันกดส่งซ้ำ: key เสถียรต่อการส่ง 1 ชุด — รีเซ็ตเฉพาะตอนสำเร็จ
+//   ล้มเหลว/กดซ้ำ = key เดิม → backend เจอแล้วคืนใบเดิม (ไม่เกิด 2 ใบ)
+//   ตั้งใจ 2 ออเดอร์ = เกิดหลัง "สำเร็จ" ครั้งแรก (key ถูกรีเซ็ต) → ใบใหม่ได้ปกติ
+let _submitKey = null;
+function _newSubmitKey(){ return 'ck-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10); }
+
 // ยิงส่งจริง (หลังผู้ใช้ยืนยันในหน้าพรีวิว)
 async function doSubmit(payload, isAdmin) {
   document.getElementById('overlay').classList.add('show');
   document.getElementById('btn-sub').disabled = true;
 
-  try {
-    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-    const r   = await res.json();
-    document.getElementById('overlay').classList.remove('show');
-    if (r.success) {
-      const af = isAdmin ? _getAdminFields() : {};
-      let successMsg = `รับออเดอร์ <b>${r.orderId}</b> แล้วครับ<br>`;
-      if (isAdmin && af.dispatchMode === 'assign' && af.driverName) {
-        successMsg += `มอบหมายให้ <b>${af.driverName}</b> แล้ว`;
-      } else if (isAdmin && af.dispatchMode === 'flex') {
-        successMsg += `📢 Broadcast หาคนขับแล้วครับ`;
-      } else {
-        successMsg += `Admin จะยืนยันเร็วๆ นี้`;
-      }
-      document.getElementById('success-msg').innerHTML = successMsg;
-      document.getElementById('success').classList.add('show');
-    } else {
-      alert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
-      document.getElementById('btn-sub').disabled = false;
+  // ผูก clientKey เดิมตลอดการส่งชุดนี้ (รวมถึงตอน retry / ผู้ใช้กดซ้ำหลังเน็ตสะดุด)
+  if (!_submitKey) _submitKey = _newSubmitKey();
+  payload.clientKey = _submitKey;
+
+  // ยิงเอง retry ได้ เพราะ backend idempotent (clientKey เดิม = ไม่สร้างซ้ำ)
+  let r = null, lastErr = null;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+      r = await res.json();
+      break;
+    } catch (e) {
+      lastErr = e;
+      if (i < 2) await new Promise(res => setTimeout(res, 500 * (i + 1)));
     }
-  } catch(e) {
-    document.getElementById('overlay').classList.remove('show');
-    alert('❌ เชื่อมต่อไม่ได้');
+  }
+
+  document.getElementById('overlay').classList.remove('show');
+
+  if (r === null) {
+    // ยิง 3 ครั้งไม่ติดจริง — อาจถึง server แล้วก็ได้ ให้กดซ้ำได้ (key เดิม กันซ้ำอยู่)
+    console.error(lastErr);
+    alert('❌ เชื่อมต่อไม่ได้ ลองกดส่งอีกครั้งได้เลยครับ (ระบบกันออเดอร์ซ้ำให้แล้ว)');
+    document.getElementById('btn-sub').disabled = false;
+    return;
+  }
+
+  if (r.success) {
+    _submitKey = null;   // ✅ สำเร็จแล้ว → ล้าง key (ออเดอร์ถัดไปได้ key ใหม่)
+    const af = isAdmin ? _getAdminFields() : {};
+    let successMsg = `รับออเดอร์ <b>${r.orderId}</b> แล้วครับ<br>`;
+    if (isAdmin && af.dispatchMode === 'assign' && af.driverName) {
+      successMsg += `มอบหมายให้ <b>${af.driverName}</b> แล้ว`;
+    } else if (isAdmin && af.dispatchMode === 'flex') {
+      successMsg += `📢 Broadcast หาคนขับแล้วครับ`;
+    } else {
+      successMsg += `Admin จะยืนยันเร็วๆ นี้`;
+    }
+    document.getElementById('success-msg').innerHTML = successMsg;
+    document.getElementById('success').classList.add('show');
+  } else {
+    alert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
     document.getElementById('btn-sub').disabled = false;
   }
 }
