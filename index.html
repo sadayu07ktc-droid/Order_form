@@ -490,6 +490,11 @@ function showMaintenance(){
 function _lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
 function _lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 
+// ⚡ แคชข้อมูลโหลดหน้า (user+garden) บนมือถือ → โชว์ทันที รีเฟรชเบื้องหลัง (เฉพาะ non-admin)
+function _getOrdCache(uid){ try{ const s=_lsGet('ssb_ord_bundle_'+uid); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function _setOrdCache(uid,d){ try{ _lsSet('ssb_ord_bundle_'+uid, JSON.stringify(d)); }catch(e){} }
+function _sameOrdData(a,b){ try{ return JSON.stringify(a.user)===JSON.stringify(b.user) && JSON.stringify(a.garden)===JSON.stringify(b.garden); }catch(e){ return false; } }
+
 async function init() {
   // ตั้งค่าช่องวันที่ (DOM-only ไม่ต้องรอ uid)
   const today = new Date().toISOString().split('T')[0];
@@ -533,6 +538,20 @@ async function _fetchJSON(url, tries = 3) {
 
 async function loadOrderForm(uid) {
   U.userId = uid;
+
+  // ⚡ โชว์จากแคชทันที (เฉพาะ non-admin: เจ้าของ/ทีม/ลาน — ข้อมูลนิ่ง)
+  //    admin ไม่แคช (งานค้าง/คนขับเปลี่ยนบ่อย) → รอ bundle ตามปกติ
+  const cached = _getOrdCache(uid);
+  let shownFromCache = false;
+  if (cached && cached.user && cached.user.status === 'ok' && cached.user.role !== 'Admin') {
+    try {
+      gData = cached.garden || {};
+      _fillTeams(gData.teams || []);
+      _setup(cached.user, gData, null);
+      shownFromCache = true;
+    } catch (e) { console.warn('cache render fail:', e); shownFromCache = false; }
+  }
+
   let m, uRes, gRes, preAdmin = null;
   try {
     // 🔗 รวมทุก call เป็นก้อนเดียว (ลด round-trip GAS 3-7 → 1)
@@ -548,7 +567,14 @@ async function loadOrderForm(uid) {
       _fetchJSON(`${GAS_URL}?action=getGardenData&userId=${uid}`)
     ]);
   }
-  if (m && m.closed) { showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ
+  if (m && m.closed) { showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ (override แคช)
+
+  // เซฟแคชรอบหน้า (เฉพาะ user+garden ของ non-admin — ไม่เก็บ maintenance/admin)
+  if (uRes.status === 'ok' && uRes.role !== 'Admin') _setOrdCache(uid, { user: uRes, garden: gRes });
+
+  // ถ้าโชว์จากแคชไปแล้ว + ข้อมูลใหม่เหมือนเดิม → ไม่ต้อง render ซ้ำ (กัน dropdown ที่ผู้ใช้เลือกไว้หาย)
+  if (shownFromCache && _sameOrdData(cached, { user: uRes, garden: gRes })) return;
+
   gData = gRes;
   _fillTeams(gRes.teams || []);
   if (uRes.status === 'ok') _setup(uRes, gRes, preAdmin);
@@ -1174,8 +1200,36 @@ function _fillGardens(gs) {
 
 // ── ทีมตัด: โหลดเฉพาะสวนที่ผูกทีมนี้ไว้ ────────────────────
 // ผูกที่หน้าข้อมูลสวน (ช่อง "ทีมตัด") ไม่มีหน้าตั้งค่าสิทธิ์แยก — จุดตั้งค่าเดียว
+function _teamGardenNote(gardens, note) {
+  if (!gardens.length) {
+    note.textContent = 'ยังไม่มีสวนที่ผูกกับทีมของคุณ กรุณาแจ้งแอดมินให้ผูกสวนก่อนครับ';
+    note.className = 'tg-note warn';
+  } else if (gardens.length === 1) {
+    // มีสวนเดียว เลือกให้เลย ไม่ต้องให้กด
+    if (gardenTS) gardenTS.setValue(gardens[0].id); else { document.getElementById('inp-garden').value = gardens[0].id; onGardenChange(); }
+    note.textContent = `สวนที่ทีมคุณดูแล: ${gardens[0].name}`;
+    note.className = 'tg-note';
+  } else {
+    note.textContent = `ทีมคุณดูแล ${gardens.length} สวน — เลือกสวนที่จะสั่งงาน`;
+    note.className = 'tg-note';
+  }
+  note.classList.remove('hide');
+}
+
 async function _loadTeamGardens() {
   const note = document.getElementById('team-garden-note');
+  const ck = 'ssb_ord_teamg_' + U.userId;
+  let shownJson = null;
+
+  // ⚡ โชว์รายชื่อสวนทีมจากแคชทันที
+  try {
+    const cs = _lsGet(ck);
+    if (cs) {
+      const cg = JSON.parse(cs);
+      if (cg && cg.length) { _fillGardens(cg); _initGardenSearch(); _teamGardenNote(cg, note); shownJson = cs; }
+    }
+  } catch (e) {}
+
   try {
     const r = await fetch(`${GAS_URL}?action=getTeamGardens&userId=${encodeURIComponent(U.userId)}`).then(x => x.json());
     if (!r || !r.ok) throw new Error((r && r.error) || 'โหลดไม่สำเร็จ');
@@ -1191,27 +1245,22 @@ async function _loadTeamGardens() {
       teamId: (r.team && r.team.code) || ''
     }));
 
+    const freshJson = JSON.stringify(gardens);
+    try { _lsSet(ck, freshJson); } catch (e) {}
+
+    // เหมือนที่โชว์จากแคชแล้ว → ไม่ต้องทำซ้ำ (กันสวนที่ผู้ใช้เลือกไว้หาย)
+    if (shownJson === freshJson) return;
+
     _fillGardens(gardens);
     _initGardenSearch();
-
-    if (!gardens.length) {
-      note.textContent = 'ยังไม่มีสวนที่ผูกกับทีมของคุณ กรุณาแจ้งแอดมินให้ผูกสวนก่อนครับ';
-      note.className = 'tg-note warn';
-    } else if (gardens.length === 1) {
-      // มีสวนเดียว เลือกให้เลย ไม่ต้องให้กด
-      if (gardenTS) gardenTS.setValue(gardens[0].id); else { document.getElementById('inp-garden').value = gardens[0].id; onGardenChange(); }
-      note.textContent = `สวนที่ทีมคุณดูแล: ${gardens[0].name}`;
-      note.className = 'tg-note';
-    } else {
-      note.textContent = `ทีมคุณดูแล ${gardens.length} สวน — เลือกสวนที่จะสั่งงาน`;
-      note.className = 'tg-note';
-    }
-    note.classList.remove('hide');
+    _teamGardenNote(gardens, note);
   } catch (e) {
     console.error('_loadTeamGardens', e);
-    note.textContent = 'โหลดรายชื่อสวนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
-    note.className = 'tg-note warn';
-    note.classList.remove('hide');
+    if (!shownJson) {   // มีแคชโชว์อยู่แล้ว = ไม่ต้องขึ้น error
+      note.textContent = 'โหลดรายชื่อสวนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+      note.className = 'tg-note warn';
+      note.classList.remove('hide');
+    }
   }
 }
 
