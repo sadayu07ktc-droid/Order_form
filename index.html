@@ -527,6 +527,15 @@ async function init() {
 }
 
 // GAS /exec เด้ง error/HTML ชั่วคราวเป็นบางครั้ง (โดยเฉพาะหลัง redeploy) → retry กัน r.json() พังแล้วค้าง
+// POST พร้อม timeout — GAS ค้าง/อืด จะถูกตัดที่ ms แล้วให้ตัวเรียก retry (ไม่หมุนค้างตลอดกาล)
+function _postWithTimeout(url, body, ms) {
+  ms = ms || 25000;
+  if (typeof AbortController === 'undefined') return fetch(url, { method: 'POST', redirect: 'follow', body });
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { method: 'POST', redirect: 'follow', body, signal: ctrl.signal }).finally(() => clearTimeout(t));
+}
+
 async function _fetchJSON(url, tries = 3) {
   let lastErr;
   for (let i = 0; i < tries; i++) {
@@ -1779,10 +1788,11 @@ async function doSubmit(payload, isAdmin) {
   payload.clientKey = _submitKey;
 
   // ยิงเอง retry ได้ เพราะ backend idempotent (clientKey เดิม = ไม่สร้างซ้ำ)
+  // ⏱️ มี timeout ต่อครั้ง (25วิ) — GAS ค้าง/อืด จะถูก abort แล้ว retry แทนหมุนค้างตลอด
   let r = null, lastErr = null;
   for (let i = 0; i < 3; i++) {
     try {
-      const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+      const res = await _postWithTimeout(GAS_URL, JSON.stringify(payload), 25000);
       r = await res.json();
       break;
     } catch (e) {
