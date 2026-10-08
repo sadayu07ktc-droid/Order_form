@@ -133,6 +133,7 @@
   .lineWarn button{flex:0 0 auto;background:var(--oil);color:#fff;border:none;border-radius:16px;
     padding:7px 12px;font-family:"Anuphan",sans-serif;font-weight:700;font-size:.8rem;cursor:pointer}
 </style>
+  <script src="https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/ssb-ui.js?v=20261008i"></script>
 </head>
 <body>
 <div class="app">
@@ -392,7 +393,7 @@ function speak(text){
 }
 const voiceBtn=document.getElementById("voiceBtn"), voiceLabel=document.getElementById("voiceLabel");
 voiceBtn.onclick=()=>{
-  if(!synth){alert("อุปกรณ์นี้อ่านออกเสียงไม่ได้ (ลองเปิดใน Chrome/Safari)");return;}
+  if(!synth){ssbAlert("อุปกรณ์นี้อ่านออกเสียงไม่ได้ (ลองเปิดใน Chrome/Safari)");return;}
   voiceOn=!voiceOn;
   voiceBtn.classList.toggle("on",voiceOn);
   voiceLabel.textContent=voiceOn?"ปิดเสียง":"เปิดเสียง";

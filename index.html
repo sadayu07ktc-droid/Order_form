@@ -94,6 +94,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 .ts-dropdown .active{background:var(--green-l)!important;color:var(--green-d)!important}
 .ts-control input::placeholder{color:var(--text-l)}
 </style>
+  <script src="https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/ssb-ui.js?v=20261008i"></script>
 </head>
 <body>
 <div id="overlay"><div class="spinner"></div><p>กำลังส่งข้อมูล...</p></div>
@@ -1473,7 +1474,7 @@ async function loadPkMasterData() {
     const data = await res.json();
 
     if (!data || !data.ok) {
-      alert('โหลดฐานข้อมูล Packing ไม่สำเร็จ');
+      ssbAlert('โหลดฐานข้อมูล Packing ไม่สำเร็จ');
       return;
     }
 
@@ -1485,7 +1486,7 @@ async function loadPkMasterData() {
 
   } catch (err) {
     console.error(err);
-    alert('โหลดฐานข้อมูล Packing ไม่สำเร็จ');
+    ssbAlert('โหลดฐานข้อมูล Packing ไม่สำเร็จ');
   }
 }
 
@@ -1594,15 +1595,15 @@ async function submitPackingForm() {
   const qty = document.getElementById('pk-qty').value;
   const unit = document.getElementById('pk-unit').value;
 
-  if (!date) { alert('กรุณาเลือกวันที่ต้องการ'); return; }
-  if (!loadTime) { alert('กรุณาระบุเวลาโหลด'); return; }
-  if (!customerSel.value) { alert('กรุณาเลือกลูกค้า'); return; }
-  if (!destSel.value) { alert('กรุณาเลือกจุดส่ง'); return; }
-  if (!vehicleType) { alert('กรุณาเลือกประเภทรถที่ต้องการ'); return; }
-  if (!vehicleCount || Number(vehicleCount) <= 0) { alert('กรุณาระบุจำนวนรถ'); return; }
-  if (!productSel.value) { alert('กรุณาเลือกรายการสินค้า'); return; }
-  if (!qty || Number(qty) <= 0) { alert('กรุณาระบุจำนวนสินค้า'); return; }
-  if (!unit) { alert('กรุณาระบุหน่วย'); return; }
+  if (!date) { ssbAlert('กรุณาเลือกวันที่ต้องการ'); return; }
+  if (!loadTime) { ssbAlert('กรุณาระบุเวลาโหลด'); return; }
+  if (!customerSel.value) { ssbAlert('กรุณาเลือกลูกค้า'); return; }
+  if (!destSel.value) { ssbAlert('กรุณาเลือกจุดส่ง'); return; }
+  if (!vehicleType) { ssbAlert('กรุณาเลือกประเภทรถที่ต้องการ'); return; }
+  if (!vehicleCount || Number(vehicleCount) <= 0) { ssbAlert('กรุณาระบุจำนวนรถ'); return; }
+  if (!productSel.value) { ssbAlert('กรุณาเลือกรายการสินค้า'); return; }
+  if (!qty || Number(qty) <= 0) { ssbAlert('กรุณาระบุจำนวนสินค้า'); return; }
+  if (!unit) { ssbAlert('กรุณาระบุหน่วย'); return; }
 
   const payload = {
     action: 'submitPkRequest',
@@ -1663,14 +1664,14 @@ async function submitPackingForm() {
         `บันทึกคำขอ Packing <b>${r.requestId}</b> แล้วค่ะ<br>สถานะ: <b>รอแอดมินตรวจสอบ</b>`;
       document.getElementById('success').classList.add('show');
     } else {
-      alert('❌ ' + (r.error || 'บันทึกคำขอ Packing ไม่สำเร็จ'));
+      ssbAlert('❌ ' + (r.error || 'บันทึกคำขอ Packing ไม่สำเร็จ'));
       document.getElementById('btn-sub').disabled = false;
     }
   
   } catch (err) {
     console.error(err);
     document.getElementById('overlay').classList.remove('show');
-    alert('❌ ส่งข้อมูลไม่สำเร็จ\n\n' + (err.message || err));
+    ssbAlert('❌ ส่งข้อมูลไม่สำเร็จ\n\n' + (err.message || err));
     document.getElementById('btn-sub').disabled = false;
   }
 }
@@ -1687,8 +1688,8 @@ async function submitForm() {
   if (isAdmin) {
     const af = _getAdminFields();
     if (af.dispatchMode === 'assign') {
-      if (!af.driverUid) { alert('กรุณาเลือกคนขับครับ'); return; }
-      if (!af.plate)     { alert('กรุณาระบุทะเบียนรถครับ (ถ้ายืมรถคันอื่น ให้เลือกประเภท + คันให้ครบ)'); return; }
+      if (!af.driverUid) { ssbAlert('กรุณาเลือกคนขับครับ'); return; }
+      if (!af.plate)     { ssbAlert('กรุณาระบุทะเบียนรถครับ (ถ้ายืมรถคันอื่น ให้เลือกประเภท + คันให้ครบ)'); return; }
     }
   }
 
@@ -1702,9 +1703,9 @@ async function submitForm() {
     const binEl  = document.getElementById('inp-bin');
     const teamEl = document.getElementById('inp-team');
 
-    if (!date)        { alert('กรุณาเลือกวันที่ครับ'); return; }
-    if (!time)        { alert('กรุณาเลือกเวลาครับ'); return; }
-    if (!U.gardenId && userRole !== 'Ramp') { alert('กรุณาเลือกสวนครับ'); return; }
+    if (!date)        { ssbAlert('กรุณาเลือกวันที่ครับ'); return; }
+    if (!time)        { ssbAlert('กรุณาเลือกเวลาครับ'); return; }
+    if (!U.gardenId && userRole !== 'Ramp') { ssbAlert('กรุณาเลือกสวนครับ'); return; }
 
     const rspoChip = document.querySelector('#rspo-container .chip.on');
     const rspo = (rspoChip?.textContent.trim() === 'มี RSPO') ? 'มี' : 'ไม่มี';
@@ -1731,16 +1732,16 @@ async function submitForm() {
 
     const items = getGoodsItems();
 
-    if (!date)       { alert('กรุณาเลือกวันที่ครับ'); return; }
-    if (!time)       { alert('กรุณาเลือกเวลาครับ'); return; }
-    if (items.length === 0) { alert('กรุณาเพิ่มรายการสินค้าครับ'); return; }
+    if (!date)       { ssbAlert('กรุณาเลือกวันที่ครับ'); return; }
+    if (!time)       { ssbAlert('กรุณาเลือกเวลาครับ'); return; }
+    if (items.length === 0) { ssbAlert('กรุณาเพิ่มรายการสินค้าครับ'); return; }
     for (const it of items) {
-      if (!it.goodsType) { alert('กรุณาเลือกรายการสินค้าให้ครบทุกรายการครับ'); return; }
-      if (!it.qty || parseFloat(it.qty) <= 0) { alert('กรุณาระบุจำนวนให้ครบทุกรายการครับ'); return; }
-      if (!it.unit) { alert('กรุณาระบุหน่วยให้ครบทุกรายการครับ'); return; }
+      if (!it.goodsType) { ssbAlert('กรุณาเลือกรายการสินค้าให้ครบทุกรายการครับ'); return; }
+      if (!it.qty || parseFloat(it.qty) <= 0) { ssbAlert('กรุณาระบุจำนวนให้ครบทุกรายการครับ'); return; }
+      if (!it.unit) { ssbAlert('กรุณาระบุหน่วยให้ครบทุกรายการครับ'); return; }
     }
-    if (!destOpt?.value) { alert('กรุณาเลือกสถานที่ส่งครับ'); return; }
-    if (!pickup)     { alert('กรุณาระบุจุดรับครับ'); return; }
+    if (!destOpt?.value) { ssbAlert('กรุณาเลือกสถานที่ส่งครับ'); return; }
+    if (!pickup)     { ssbAlert('กรุณาระบุจุดรับครับ'); return; }
 
     const destData = JSON.parse(destOpt.value);
 
@@ -1806,7 +1807,7 @@ async function doSubmit(payload, isAdmin) {
   if (r === null) {
     // ยิง 3 ครั้งไม่ติดจริง — อาจถึง server แล้วก็ได้ ให้กดซ้ำได้ (key เดิม กันซ้ำอยู่)
     console.error(lastErr);
-    alert('❌ เชื่อมต่อไม่ได้ ลองกดส่งอีกครั้งได้เลยครับ (ระบบกันออเดอร์ซ้ำให้แล้ว)');
+    ssbAlert('❌ เชื่อมต่อไม่ได้ ลองกดส่งอีกครั้งได้เลยครับ (ระบบกันออเดอร์ซ้ำให้แล้ว)');
     document.getElementById('btn-sub').disabled = false;
     return;
   }
@@ -1825,7 +1826,7 @@ async function doSubmit(payload, isAdmin) {
     document.getElementById('success-msg').innerHTML = successMsg;
     document.getElementById('success').classList.add('show');
   } else {
-    alert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
+    ssbAlert('❌ ' + (r.error || 'เกิดข้อผิดพลาด'));
     document.getElementById('btn-sub').disabled = false;
   }
 }
