@@ -925,7 +925,8 @@ function _fillDrivers(drivers) {
   drivers.forEach(d => {
     const el = document.createElement('option');
     el.value = d.uid;
-    el.textContent = d.name;
+    el.textContent = d.name + (d.group && d.group !== 'ไร่' ? ' · ' + d.group : '');   // ป้ายกลุ่มงาน Bulk/Packing (ไร่ไม่ต้องโชว์) · ชื่อจริงอยู่ dataset.name
+    el.dataset.group = d.group || 'ไร่';
     el.dataset.name  = d.name;
     el.dataset.phone = d.phone || '';
     el.dataset.plate = d.plate || '';
