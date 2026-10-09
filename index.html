@@ -546,6 +546,20 @@ async function _fetchJSON(url, tries = 3) {
   throw lastErr;
 }
 
+// ⚡ อ่านข้อมูลฟอร์มจาก Supabase Edge "order-form" ก่อน (~1 วิ · ผลตรง GAS ทุกฟิลด์) · พลาด/เกิน 10 วิ → GAS เดิม · 2026-10-09
+const EDGE_FORM_URL = 'https://abihhdjcrbvwlkzwvjio.supabase.co/functions/v1/order-form';
+async function _edgeFirst(action, uid) {
+  try {
+    const ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const tm = ac ? setTimeout(() => ac.abort(), 10000) : null;
+    const r = await fetch(`${EDGE_FORM_URL}?action=${action}&userId=${encodeURIComponent(uid)}`, ac ? { signal: ac.signal } : {});
+    if (tm) clearTimeout(tm);
+    const j = await r.json();
+    if (j && j.ok) return j;
+  } catch (e) { console.warn('order-form Edge → GAS', e); }
+  return _fetchJSON(`${GAS_URL}?action=${action}&userId=${encodeURIComponent(uid)}`);
+}
+
 async function loadOrderForm(uid) {
   U.userId = uid;
 
@@ -565,7 +579,7 @@ async function loadOrderForm(uid) {
   let m, uRes, gRes, preAdmin = null;
   try {
     // 🔗 รวมทุก call เป็นก้อนเดียว (ลด round-trip GAS 3-7 → 1)
-    const b = await _fetchJSON(`${GAS_URL}?action=getOrderFormBundle&userId=${uid}`);
+    const b = await _edgeFirst('getOrderFormBundle', uid);
     if (!b || !b.user) throw new Error('bundle ไม่สมบูรณ์');
     m = b.maintenance; uRes = b.user; gRes = b.garden || {}; preAdmin = b.admin || null;
   } catch (e) {
@@ -1242,7 +1256,7 @@ async function _loadTeamGardens() {
   } catch (e) {}
 
   try {
-    const r = await fetch(`${GAS_URL}?action=getTeamGardens&userId=${encodeURIComponent(U.userId)}`).then(x => x.json());
+    const r = await _edgeFirst('getTeamGardens', U.userId);
     if (!r || !r.ok) throw new Error((r && r.error) || 'โหลดไม่สำเร็จ');
 
     // แปลงให้ตรงรูปแบบที่ _fillGardens/onGardenChange ใช้อยู่แล้ว
