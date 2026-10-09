@@ -493,6 +493,9 @@ function _lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 
 // ⚡ แคชข้อมูลโหลดหน้า (user+garden) บนมือถือ → โชว์ทันที รีเฟรชเบื้องหลัง (เฉพาะ non-admin)
 function _getOrdCache(uid){ try{ const s=_lsGet('ssb_ord_bundle_'+uid); return s?JSON.parse(s):null; }catch(e){ return null; } }
+// แคชได้เฉพาะ เจ้าของสวน/ทีมตัด/ลาน (ข้อมูลนิ่ง) — เดิมเช็คแค่ !== 'Admin' → ADMIN_PK/MANAGER ถูกแคช
+//   เปลี่ยนประเภทแอดมินแล้วหน้าโชว์ฟอร์มเก่า (Packing) ซ้อนกับฟอร์มแอดมิน · 2026-10-09
+const ORD_CACHE_ROLES={Owner:1,Team:1,Ramp:1};
 function _setOrdCache(uid,d){ try{ _lsSet('ssb_ord_bundle_'+uid, JSON.stringify(d)); }catch(e){} }
 function _sameOrdData(a,b){ try{ return JSON.stringify(a.user)===JSON.stringify(b.user) && JSON.stringify(a.garden)===JSON.stringify(b.garden); }catch(e){ return false; } }
 
@@ -569,7 +572,7 @@ async function loadOrderForm(uid) {
   //    admin ไม่แคช (งานค้าง/คนขับเปลี่ยนบ่อย) → รอ bundle ตามปกติ
   const cached = _getOrdCache(uid);
   let shownFromCache = false;
-  if (cached && cached.user && cached.user.status === 'ok' && cached.user.role !== 'Admin') {
+  if (cached && cached.user && cached.user.status === 'ok' && ORD_CACHE_ROLES[cached.user.role]) {
     try {
       gData = cached.garden || {};
       _fillTeams(gData.teams || []);
@@ -598,7 +601,11 @@ async function loadOrderForm(uid) {
   if (m && m.closed) { showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ (override แคช)
 
   // เซฟแคชรอบหน้า (เฉพาะ user+garden ของ non-admin — ไม่เก็บ maintenance/admin)
-  if (uRes.status === 'ok' && uRes.role !== 'Admin') _setOrdCache(uid, { user: uRes, garden: gRes });
+  if (uRes.status === 'ok' && ORD_CACHE_ROLES[uRes.role]) _setOrdCache(uid, { user: uRes, garden: gRes });
+  else if (uRes.status === 'ok') { try { localStorage.removeItem('ssb_ord_bundle_' + uid); } catch (e) {} }   // บทบาทนี้ไม่แคช → ล้างของเก่าทิ้ง
+
+  // โชว์จากแคชไปแล้ว แต่บทบาทเปลี่ยน (เช่น เจ้าของสวน → ทีมตัด) → หน้าเดิมวาดค้างไว้ปนกัน โหลดหน้าใหม่ให้สะอาด (แคชถูกล้าง/อัปเดตแล้ว ไม่วนซ้ำ)
+  if (shownFromCache && uRes.status === 'ok' && cached.user.role !== uRes.role) { location.reload(); return; }
 
   // ถ้าโชว์จากแคชไปแล้ว + ข้อมูลใหม่เหมือนเดิม → ไม่ต้อง render ซ้ำ (กัน dropdown ที่ผู้ใช้เลือกไว้หาย)
   if (shownFromCache && _sameOrdData(cached, { user: uRes, garden: gRes })) return;
