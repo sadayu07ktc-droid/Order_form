@@ -562,6 +562,7 @@ async function _edgeFirst(action, uid) {
 
 async function loadOrderForm(uid) {
   U.userId = uid;
+  window._ordLoadUid = uid;   // โหลดล่วงหน้าด้วย uid ที่จำไว้ แต่ LINE เป็นอีกบัญชี → ผลของบัญชีเก่าห้ามทับหน้า (2026-10-09)
 
   // ⚡ โชว์จากแคชทันที (เฉพาะ non-admin: เจ้าของ/ทีม/ลาน — ข้อมูลนิ่ง)
   //    admin ไม่แคช (งานค้าง/คนขับเปลี่ยนบ่อย) → รอ bundle ตามปกติ
@@ -591,6 +592,7 @@ async function loadOrderForm(uid) {
       _fetchJSON(`${GAS_URL}?action=getGardenData&userId=${uid}`)
     ]);
   }
+  if (window._ordLoadUid !== uid) return;   // มีการโหลดบัญชีอื่นทีหลังแล้ว → ทิ้งผลนี้
   if (m && m.closed) { showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ (override แคช)
 
   // เซฟแคชรอบหน้า (เฉพาะ user+garden ของ non-admin — ไม่เก็บ maintenance/admin)
