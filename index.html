@@ -547,6 +547,7 @@ async function _fetchJSON(url, tries = 3) {
 }
 
 // ⚡ อ่านข้อมูลฟอร์มจาก Supabase Edge "order-form" ก่อน (~1 วิ · ผลตรง GAS ทุกฟิลด์) · พลาด/เกิน 10 วิ → GAS เดิม · 2026-10-09
+const EDGE_SUBMIT_URL = 'https://abihhdjcrbvwlkzwvjio.supabase.co/functions/v1/order-submit';
 const EDGE_FORM_URL = 'https://abihhdjcrbvwlkzwvjio.supabase.co/functions/v1/order-form';
 async function _edgeFirst(action, uid) {
   try {
@@ -583,6 +584,7 @@ async function loadOrderForm(uid) {
     const b = await _edgeFirst('getOrderFormBundle', uid);
     if (!b || !b.user) throw new Error('bundle ไม่สมบูรณ์');
     m = b.maintenance; uRes = b.user; gRes = b.garden || {}; preAdmin = b.admin || null;
+    window._submitVia = b.submitVia || 'gas';   // Edge bundle บอกว่าปุ่มส่งใช้ Edge ไหม (app_config ORDER_SUBMIT_VIA) · มาจาก GAS = gas
   } catch (e) {
     // ทางถอย: ยิงแยกแบบเดิม (กันหน้าเปล่าถ้า bundle พัง)
     console.warn('bundle fail → fallback แยก call:', e);
@@ -1808,13 +1810,17 @@ async function doSubmit(payload, isAdmin) {
   // ยิงเอง retry ได้ เพราะ backend idempotent (clientKey เดิม = ไม่สร้างซ้ำ)
   // ⏱️ มี timeout ต่อครั้ง (25วิ) — GAS ค้าง/อืด จะถูก abort แล้ว retry แทนหมุนค้างตลอด
   let r = null, lastErr = null;
+  // ⚡ ส่งผ่าน Edge "order-submit" (~1-2 วิ) เมื่อสวิตช์เปิด · เน็ตหลุด/ไม่ตอบ → ถอยไป GAS (clientKey เดิม = ไม่สร้างซ้ำ) · 2026-10-09
+  let viaEdge = (window._submitVia === 'edge');
   for (let i = 0; i < 3; i++) {
     try {
-      const res = await _postWithTimeout(GAS_URL, JSON.stringify(payload), 25000);
+      const res = viaEdge ? await _postWithTimeout(EDGE_SUBMIT_URL, JSON.stringify(payload), 20000)
+                          : await _postWithTimeout(GAS_URL, JSON.stringify(payload), 25000);
       r = await res.json();
       break;
     } catch (e) {
       lastErr = e;
+      if (viaEdge) { console.warn('order-submit Edge → GAS', e); viaEdge = false; }   // Edge ใช้ไม่ได้ → รอบถัดไปไป GAS
       if (i < 2) await new Promise(res => setTimeout(res, 500 * (i + 1)));
     }
   }
