@@ -664,8 +664,8 @@ function _setup(u, g, preAdmin) {
     document.getElementById('back-dash').classList.remove('hide');   // ← ปุ่มกลับ Dashboard (เฉพาะ Admin)
     document.getElementById('h-admin').classList.remove('hide');
     document.getElementById('card-assign').classList.remove('hide');
-    _fillGardens(g.gardens || []);
-    _initGardenSearch();
+    _fillGardens(g.gardens || [], g.ramps || []);   // แอดมินเลือกลานเป็นจุดรับได้
+    _initGardenSearch('🔍 พิมพ์ค้นหาสวน หรือ ลาน...');
     _loadAdminData(g, preAdmin);
   } else if (u.role === 'Team') {
     document.getElementById('uname').textContent = u.name;
@@ -1212,7 +1212,9 @@ function getGoodsItems() {
 
 
 // ── Fill Helpers ──────────────────────────────────────────
-function _fillGardens(gs) {
+// ramps (เฉพาะแอดมิน) = ให้เลือก "ลาน" เป็นจุดรับปาล์มได้ตรงๆ — มอบหมายคนขับไปรับที่ลาน · 2026-10-09
+//   รหัสลาน (LT-) ลงช่องรหัสสวนของออเดอร์ (แบบเดียวกับออเดอร์จากฟอร์มรายวันของลาน) · ไม่ถามลาน · การ์ดคนขับใช้เบอร์/พิกัดลาน
+function _fillGardens(gs, ramps) {
   const sel = document.getElementById('inp-garden');
   sel.innerHTML = '<option value="">-- เลือกสวน --</option>';
   gs.forEach(g => {
@@ -1223,6 +1225,18 @@ function _fillGardens(gs) {
     o.dataset.location = g.location    || '';
     o.dataset.rspo     = g.rspo        || 'ไม่มี';
     o.dataset.teamId   = g.teamId      || '';
+    sel.appendChild(o);
+  });
+  (ramps || []).forEach(r => {
+    if (!r || !r.id) return;
+    const o = document.createElement('option');
+    o.value = r.id; o.textContent = '🏭 ' + (r.name || r.id);
+    o.dataset.name     = r.name || r.id;
+    o.dataset.isRamp   = '1';
+    o.dataset.bills    = '[]';
+    o.dataset.pickups  = JSON.stringify([{ name: r.name || r.id, rspo: 'ไม่มี', location: '' }]);
+    o.dataset.rspo     = 'ไม่มี';
+    o.dataset.teamId   = '';
     sel.appendChild(o);
   });
 }
@@ -1294,12 +1308,12 @@ async function _loadTeamGardens() {
 }
 
 // ✅ แปลงช่องเลือกสวนเป็น dropdown ค้นหาได้ (Tom Select)
-function _initGardenSearch() {
+function _initGardenSearch(ph) {
   if (gardenTS) { gardenTS.destroy(); gardenTS = null; }
   gardenTS = new TomSelect('#inp-garden', {
     create: false,
     sortField: { field: 'text', direction: 'asc' },
-    placeholder: '🔍 พิมพ์ค้นหาสวน...',
+    placeholder: ph || '🔍 พิมพ์ค้นหาสวน...',
     onChange: function() { onGardenChange(); }
   });
 }
@@ -1396,7 +1410,7 @@ function onGardenChange() {
   const o = document.getElementById('inp-garden');
   const opt = o.options[o.selectedIndex];
   if (!opt || !opt.value) { _fillBills([]); _fillPickups([]); _setRspo('ไม่มี'); _setTeam(''); return; }
-  U.gardenId = opt.value; U.gardenName = opt.textContent;
+  U.gardenId = opt.value; U.gardenName = opt.dataset.name || opt.textContent;   // ลาน: ชื่อจริงไม่มี 🏭
   _fillBills(JSON.parse(opt.dataset.bills || '[]'));
 
   const pickups = JSON.parse(opt.dataset.pickups || '[]');
