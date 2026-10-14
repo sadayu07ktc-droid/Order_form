@@ -620,7 +620,7 @@ async function loadOrderForm(uid) {
     let pf = {}; try { pf = JSON.parse(_lsGet('ssb_ord_prof') || '{}') || {}; } catch (e) {}   // โหลดล่วงหน้าก่อน LINE ตอบ → ใช้ชื่อ/รูปที่จำไว้
     // Bulk = หน้าแพลนส่งมอบ (bulk.html) · ระหว่างทำแจ้งเตือน LINE เปิดให้ DEV ทดสอบก่อน · Packing ปิดไว้ก่อน (คุณน้อง 14 ต.ค.)
     let gi = null; try { gi = await ssbGroupInfo(uid); } catch (e) {}
-    const off = { Packing: 'ยังไม่เปิดใช้' }; if (!(gi && gi.isDev)) off.Bulk = 'กำลังทดสอบ (เปิดเร็วๆ นี้)';
+    const off = { Packing: 'ยังไม่เปิดใช้' }; if (!(gi && (gi.isDev || ['ADMIN_BULK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Bulk = 'เฉพาะแอดมิน Bulk / ผู้จัดการ';   // อัปโหลดแพลนได้ = DEV / ADMIN_BULK / MANAGER (ตรงกับ Edge bulk-plan)
     const g = await ssbGroupGate(uid, { title: 'สร้าง/มอบหมายงาน', key: 'orderform', name: U.displayName || pf.n, picture: U.pictureUrl || pf.p,
       desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Bulk: 'อัปโหลดแพลนส่งมอบ (SAP) · แจกงาน', Packing: 'ส่งคำขอรถ Packing' }, off });
     if (g === 'Bulk') { location.href = 'https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/bulk.html'; return; }
