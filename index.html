@@ -519,7 +519,7 @@ async function init() {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) { liff.login(); return; }
     const p = await liff.getProfile();
-    U.userId = p.userId; U.displayName = p.displayName; U.pictureUrl = p.pictureUrl; _lsSet('ssb_ord_uid', p.userId);
+    U.userId = p.userId; U.displayName = p.displayName; U.pictureUrl = p.pictureUrl; _lsSet('ssb_ord_uid', p.userId); _lsSet('ssb_ord_prof', JSON.stringify({ n: p.displayName || '', p: p.pictureUrl || '' }));
     if (pre && cachedUid === p.userId) { await pre; }   // uid ตรง → ใช้ผลที่โหลดขนานไปแล้ว
     else { await loadOrderForm(p.userId); }              // uid เปลี่ยน/ไม่มี cache → โหลดด้วย uid จริง
   } catch(e) {
@@ -617,8 +617,9 @@ async function loadOrderForm(uid) {
   // 🧭 แอดมิน: เลือกกลุ่ม (ไร่/Bulk/Packing) + PIN ส่วนตัวก่อนสร้าง/มอบหมายงาน · ssb-group-gate.js (2026-10-14)
   //    ไร่ = ฟอร์มแอดมินเดิม · Packing = ฟอร์มขอรถ Packing (เหมือนแอดมิน Packing) · Bulk = ยังไม่มีฟอร์ม
   if (uRes.status === 'ok' && (uRes.role === 'Admin' || uRes.role === 'ADMIN_PK') && typeof ssbGroupGate === 'function') {
-    const g = await ssbGroupGate(uid, { title: 'สร้าง/มอบหมายงาน', key: 'orderform', name: U.displayName, picture: U.pictureUrl,
-      desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Packing: 'ส่งคำขอรถ Packing' }, off: { Bulk: 'ยังไม่เปิดใช้ (รอฟอร์ม Bulk)' } });
+    let pf = {}; try { pf = JSON.parse(_lsGet('ssb_ord_prof') || '{}') || {}; } catch (e) {}   // โหลดล่วงหน้าก่อน LINE ตอบ → ใช้ชื่อ/รูปที่จำไว้
+    const g = await ssbGroupGate(uid, { title: 'สร้าง/มอบหมายงาน', key: 'orderform', name: U.displayName || pf.n, picture: U.pictureUrl || pf.p,
+      desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Packing: 'ส่งคำขอรถ Packing' }, off: { Bulk: 'ยังไม่เปิดใช้ (เฟสถัดไป)', Packing: 'ยังไม่เปิดใช้' } });   // คุณน้อง 14 ต.ค.: ปิด Packing ไว้ก่อน · Bulk เปิดเฟสถัดไป
     if (!g || window._ordLoadUid !== uid) return;
     if (g === 'Packing') uRes = Object.assign({}, uRes, { role: 'ADMIN_PK' });
     else if (g === 'ไร่' && uRes.role !== 'Admin') return;   // (กันไว้) แอดมิน Packing เลือกไร่ไม่ได้อยู่แล้ว
