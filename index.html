@@ -618,8 +618,12 @@ async function loadOrderForm(uid) {
   //    ไร่ = ฟอร์มแอดมินเดิม · Packing = ฟอร์มขอรถ Packing (เหมือนแอดมิน Packing) · Bulk = ยังไม่มีฟอร์ม
   if (uRes.status === 'ok' && (uRes.role === 'Admin' || uRes.role === 'ADMIN_PK') && typeof ssbGroupGate === 'function') {
     let pf = {}; try { pf = JSON.parse(_lsGet('ssb_ord_prof') || '{}') || {}; } catch (e) {}   // โหลดล่วงหน้าก่อน LINE ตอบ → ใช้ชื่อ/รูปที่จำไว้
+    // Bulk = หน้าแพลนส่งมอบ (bulk.html) · ระหว่างทำแจ้งเตือน LINE เปิดให้ DEV ทดสอบก่อน · Packing ปิดไว้ก่อน (คุณน้อง 14 ต.ค.)
+    let gi = null; try { gi = await ssbGroupInfo(uid); } catch (e) {}
+    const off = { Packing: 'ยังไม่เปิดใช้' }; if (!(gi && gi.isDev)) off.Bulk = 'กำลังทดสอบ (เปิดเร็วๆ นี้)';
     const g = await ssbGroupGate(uid, { title: 'สร้าง/มอบหมายงาน', key: 'orderform', name: U.displayName || pf.n, picture: U.pictureUrl || pf.p,
-      desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Packing: 'ส่งคำขอรถ Packing' }, off: { Bulk: 'ยังไม่เปิดใช้ (เฟสถัดไป)', Packing: 'ยังไม่เปิดใช้' } });   // คุณน้อง 14 ต.ค.: ปิด Packing ไว้ก่อน · Bulk เปิดเฟสถัดไป
+      desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Bulk: 'อัปโหลดแพลนส่งมอบ (SAP) · แจกงาน', Packing: 'ส่งคำขอรถ Packing' }, off });
+    if (g === 'Bulk') { location.href = 'https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/bulk.html'; return; }
     if (!g || window._ordLoadUid !== uid) return;
     if (g === 'Packing') uRes = Object.assign({}, uRes, { role: 'ADMIN_PK' });
     else if (g === 'ไร่' && uRes.role !== 'Admin') return;   // (กันไว้) แอดมิน Packing เลือกไร่ไม่ได้อยู่แล้ว
