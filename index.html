@@ -82,6 +82,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 #success p{font-size:14px;color:var(--text-m);line-height:1.8}
 .btn-close{margin-top:10px;padding:12px 32px;border-radius:999px;background:var(--green);color:#fff;font-size:15px;font-family:'Sarabun',sans-serif;border:none;cursor:pointer}
 .hide{display:none}
+/* ระหว่างรอรู้บทบาท (และรอแอดมินเลือกกลุ่ม) ซ่อนฟอร์มไว้ โชว์แค่การ์ดชื่อ — เดิมฟอร์มเจ้าของสวนโผล่ก่อนชิปเลือกกลุ่ม · 2026-10-15 */
+body.boot .body>*:not(#ucard){display:none!important}
 .driver-info{font-size:11px;color:var(--text-m);padding:6px 10px;background:rgba(79,70,229,.06);border-radius:8px;margin-top:6px;display:none}
 .prefill-badge{font-size:10px;background:#FEF3C7;color:#92400E;border:.5px solid #FDE68A;border-radius:6px;padding:3px 8px;margin-bottom:10px;display:inline-block}
 .goods-row{background:var(--cream);border:.5px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
@@ -101,7 +103,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
   <script src="https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/ssb-pin-gate.js?v=20261014b"></script>
   <script src="https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/ssb-group-gate.js?v=20261014a"></script>
 </head>
-<body>
+<body class="boot">
 <div id="overlay"><div class="spinner"></div><p>กำลังส่งข้อมูล...</p></div>
 <div id="success">
   <div class="si">✅</div>
@@ -632,7 +634,7 @@ async function loadOrderForm(uid) {
     else if (g === 'ไร่' && uRes.role !== 'Admin') return;   // (กันไว้) แอดมิน Packing เลือกไร่ไม่ได้อยู่แล้ว
   }
   if (uRes.status === 'ok') _setup(uRes, gRes, preAdmin);
-  else document.getElementById('uname').textContent = U.displayName || '';
+  else { document.body.classList.remove('boot'); document.getElementById('uname').textContent = U.displayName || ''; }
 }
 
 // ── Setup UI ──────────────────────────────────────────────
@@ -643,6 +645,7 @@ const roleAvCls   = { Owner:'av-g', Team:'av-g', Ramp:'av-b', Admin:'av-i', ADMI
 const roleBgCls   = { Owner:'bg-g', Team:'bg-g', Ramp:'bg-b', Admin:'bg-i', ADMIN_PK:'bg-i' };
 
 function _setup(u, g, preAdmin) {
+  document.body.classList.remove('boot');
   U = { ...U, ...u };
   userRole = u.role;
 
