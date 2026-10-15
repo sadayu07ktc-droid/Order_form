@@ -628,7 +628,7 @@ async function loadOrderForm(uid) {
     const off = { Packing: 'ยังไม่เปิดใช้' }; if (!(gi && (gi.isDev || ['ADMIN_BULK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Bulk = 'เฉพาะแอดมิน Bulk / ผู้จัดการ';   // อัปโหลดแพลนได้ = DEV / ADMIN_BULK / MANAGER (ตรงกับ Edge bulk-plan)
     const g = await ssbGroupGate(uid, { title: 'สร้าง/มอบหมายงาน', key: 'orderform', name: U.displayName || pf.n, picture: U.pictureUrl || pf.p,
       desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Bulk: 'อัปโหลดแพลนส่งมอบ (SAP) · แจกงาน', Packing: 'ส่งคำขอรถ Packing' }, off });
-    if (g === 'Bulk') { location.href = 'https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/bulk.html'; return; }
+    if (g === 'Bulk') { location.href = 'https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/bulk.html?t=' + Date.now(); return; }   // ?t= กันเบราว์เซอร์ใช้หน้าเก่าที่จำไว้
     if (!g || window._ordLoadUid !== uid) return;
     if (g === 'Packing') uRes = Object.assign({}, uRes, { role: 'ADMIN_PK' });
     else if (g === 'ไร่' && uRes.role !== 'Admin') return;   // (กันไว้) แอดมิน Packing เลือกไร่ไม่ได้อยู่แล้ว
