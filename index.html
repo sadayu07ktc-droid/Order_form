@@ -1947,6 +1947,36 @@ function openOrderPreview(payload, isAdmin){
   document.getElementById('pvGo').onclick=()=>{ closeOrderPreview(); doSubmit(payload, isAdmin); };
 }
 
+// 🔎 ทะเบียนพิมพ์ค้นหาได้ (Tom Select แบบช่องสวน) · 2026-10-19 คุณน้อง: "ดรอปดาวน์มันเยอะมาก"
+//   ใช้กับ ระบุเอง / ลูกคันอื่น / คันที่ยืม · <select> เดิมยังอยู่ — โค้ดเดิมอ่าน .value / เติม option / สลับ .hide ได้เหมือนเดิม
+//   observer คอยซิงก์: option เปลี่ยน → โหลดรายการใหม่ · .hide เปลี่ยน → ซ่อน/โชว์ช่องค้นหา · โหลด lib ไม่ได้ = ใช้ select ธรรมดา
+function _plateSearch(id, ph) {
+  const sel = document.getElementById(id);
+  if (!sel || sel.tomselect || typeof TomSelect === 'undefined') return;
+  const mt = sel.style.marginTop;
+  const ts = new TomSelect(sel, { create: false, placeholder: ph, maxOptions: 1000, allowEmptyOption: false });
+  if (mt) ts.wrapper.style.marginTop = mt;
+  const sigOf = () => [...sel.options].map(o => o.value + '|' + o.textContent).join('\n');
+  let sig = sigOf(), busy = false;
+  const vis = () => ts.wrapper.classList.toggle('hide', sel.classList.contains('hide'));
+  vis();
+  new MutationObserver(() => {
+    vis();
+    if (busy) return;
+    const s = sigOf(); if (s === sig) return;
+    busy = true;
+    try {   // ล้างค่าที่เลือกก่อน — ไม่งั้น Tom Select เก็บคันเดิมค้างไว้ในรายการใหม่
+      const v = sel.value; ts.clear(true); ts.clearOptions(); ts.sync();
+      if (v && [...sel.options].some(o => o.value === v)) ts.setValue(v, true);
+      else ts.clear(true);   // sync() เลือกคันแรกให้เองทั้งที่ค่าจริงว่าง → ล้างให้ตรงกัน
+    }
+    finally { sig = sigOf(); busy = false; }
+  }).observe(sel, { attributes: true, attributeFilter: ['class'], childList: true });
+}
+_plateSearch('inp-plate-custom', '🔍 พิมพ์ค้นหาทะเบียน...');
+_plateSearch('inp-child-plate', '🔍 พิมพ์ค้นหาลูก/หาง หรือชื่อคนขับ...');
+_plateSearch('inp-borrow-vehicle', '🔍 พิมพ์ค้นหาทะเบียน หรือชื่อคนขับ...');
+
 init();
 </script>
 </body>
