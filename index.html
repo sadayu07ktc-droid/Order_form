@@ -758,12 +758,12 @@ async function _loadAdminData(g, pre) {
     _fillPendingOrders(ordRes.orders || []);
     _fillDrivers(drvRes.drivers || []);
     _fillAllPlates(drvRes.drivers || []);
-    _fillDestinations(g);
+    _fillDestinations(g, (pre && pre.stations) || []);
     _applyPresetOrderId();
   } catch(e) { console.error('Admin data load error:', e); }
 }
 
-function _fillDestinations(g) {
+function _fillDestinations(g, stations) {
   const sel = document.getElementById('inp-dest');
   sel.innerHTML = '<option value="">-- เลือกสถานที่ส่ง --</option>';
   const optgGroup = document.createElement('optgroup');
@@ -784,6 +784,18 @@ function _fillDestinations(g) {
     optRGroup.appendChild(o);
   });
   sel.appendChild(optRGroup);
+  // 📍 สถานีจากตารางค่ากลาง (ที่ยังไม่ได้ผูกสวน/ลาน · ไม่รวม Packing) — id CD-<แถว> ให้ค่าแรงหาระยะค่ากลางเจอ
+  if (stations && stations.length) {
+    const optSGroup = document.createElement('optgroup');
+    optSGroup.label = '📍 สถานีอื่น (จากค่ากลาง)';
+    stations.forEach(st => {
+      const o = document.createElement('option');
+      o.value = JSON.stringify({ id: st.id, name: st.name, type: 'station', pickup: st.pickup || '' });
+      o.textContent = st.name + (st.jobType ? ' · ' + st.jobType : '');
+      optSGroup.appendChild(o);
+    });
+    sel.appendChild(optSGroup);
+  }
 }
 
 function onDestChange() {
@@ -793,9 +805,9 @@ function onDestChange() {
   const data = JSON.parse(opt.value);
   const pickupSel = document.getElementById('inp-pickup-o');
   pickupSel.innerHTML = '<option value="">-- เลือกจุดรับ --</option>';
-  if (data.type === 'ramp') {
+  if (data.type === 'ramp' || data.type === 'station') {
     const o = document.createElement('option');
-    o.value = o.textContent = data.name;
+    o.value = o.textContent = data.pickup || data.name;
     pickupSel.appendChild(o);
     pickupSel.selectedIndex = 1;
   } else {
