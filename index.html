@@ -7,7 +7,7 @@
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <!-- 🔑 บัตรล็อกอินร่วมกับแดชบอร์ด (SSO · 2026-10-14): เปิดจากแดชบอร์ด = ใช้บัญชีเดียวกับแดชบอร์ด ไม่ใช้บัญชี LINE ที่ค้างในเบราว์เซอร์
      เครื่องที่ไม่เคยล็อกอินแดชบอร์ด (เจ้าของสวน/ทีมตัด/ลาน) ไม่มีบัตร → ทำงานแบบ LIFF เดิมทุกอย่าง -->
-<script src="https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/ssb-read.js?v=20261014b"></script>
+<script src="/SSB-SMART-SUPPLY-DASHBOARD/ssb-read.js?v=20261014b"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
@@ -99,9 +99,9 @@ body.boot .body>*:not(#ucard){display:none!important}
 .ts-dropdown .active{background:var(--green-l)!important;color:var(--green-d)!important}
 .ts-control input::placeholder{color:var(--text-l)}
 </style>
-  <script src="https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/ssb-ui.js?v=20261008i"></script>
-  <script src="https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/ssb-pin-gate.js?v=20261014b"></script>
-  <script src="https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/ssb-group-gate.js?v=20261014a"></script>
+  <script src="/SSB-SMART-SUPPLY-DASHBOARD/ssb-ui.js?v=20261008i"></script>
+  <script src="/SSB-SMART-SUPPLY-DASHBOARD/ssb-pin-gate.js?v=20261014b"></script>
+  <script src="/SSB-SMART-SUPPLY-DASHBOARD/ssb-group-gate.js?v=20261014a"></script>
 </head>
 <body class="boot">
 <div id="overlay"><div class="spinner"></div><p>กำลังส่งข้อมูล...</p></div>
@@ -441,7 +441,7 @@ const LIFF_ID = '2010274217-BF41B8c2';
 // 🔧 ปิด-เปิดปรับปรุง ย้ายไปคุมที่ Script Property MAINT_ORDER (on/off) + MAINT_ALLOW_ROLES/UIDS
 //    เช็คผ่าน backend action=getMaintenance ใน init() แล้ว — ไม่ต้องแก้ไฟล์นี้อีก
 const DASHBOARD_URL = 'https://liff.line.me/2010274217-Ot7vGhri';   // SSB Dashboard (LIFF_ID_ADMIN)
-const PALM_DAILY_URL = 'https://sadayu07ktc-droid.github.io/Order_form/palm/';
+const PALM_DAILY_URL = '/Order_form/palm/';
 
 function goToPalmDaily(){
   const q = new URLSearchParams();
@@ -628,7 +628,7 @@ async function loadOrderForm(uid) {
     const off = { Packing: 'ยังไม่เปิดใช้' }; if (!(gi && (gi.isDev || ['ADMIN_BULK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Bulk = 'เฉพาะแอดมิน Bulk / ผู้จัดการ';   // อัปโหลดแพลนได้ = DEV / ADMIN_BULK / MANAGER (ตรงกับ Edge bulk-plan)
     const g = await ssbGroupGate(uid, { title: 'สร้าง/มอบหมายงาน', key: 'orderform', name: U.displayName || pf.n, picture: U.pictureUrl || pf.p,
       desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Bulk: 'อัปโหลดแพลนส่งมอบ (SAP) · แจกงาน', Packing: 'ส่งคำขอรถ Packing' }, off });
-    if (g === 'Bulk') { location.href = 'https://sadayu07ktc-droid.github.io/SSB-SMART-SUPPLY-DASHBOARD/bulk.html?t=' + Date.now(); return; }   // ?t= กันเบราว์เซอร์ใช้หน้าเก่าที่จำไว้
+    if (g === 'Bulk') { location.href = '/SSB-SMART-SUPPLY-DASHBOARD/bulk.html?t=' + Date.now(); return; }   // ?t= กันเบราว์เซอร์ใช้หน้าเก่าที่จำไว้
     if (!g || window._ordLoadUid !== uid) return;
     if (g === 'Packing') uRes = Object.assign({}, uRes, { role: 'ADMIN_PK' });
     else if (g === 'ไร่' && uRes.role !== 'Admin') return;   // (กันไว้) แอดมิน Packing เลือกไร่ไม่ได้อยู่แล้ว
