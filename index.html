@@ -625,13 +625,15 @@ async function loadOrderForm(uid) {
     let pf = {}; try { pf = JSON.parse(_lsGet('ssb_ord_prof') || '{}') || {}; } catch (e) {}   // โหลดล่วงหน้าก่อน LINE ตอบ → ใช้ชื่อ/รูปที่จำไว้
     // Bulk = หน้าแพลนส่งมอบ (bulk.html) · ระหว่างทำแจ้งเตือน LINE เปิดให้ DEV ทดสอบก่อน · Packing ปิดไว้ก่อน (คุณน้อง 14 ต.ค.)
     let gi = null; try { gi = await ssbGroupInfo(uid); } catch (e) {}
-    const off = { Packing: 'ยังไม่เปิดใช้' }; if (!(gi && (gi.isDev || ['ADMIN_BULK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Bulk = 'เฉพาะแอดมิน Bulk / ผู้จัดการ';   // อัปโหลดแพลนได้ = DEV / ADMIN_BULK / MANAGER (ตรงกับ Edge bulk-plan)
+    const off = {}; if (!(gi && (gi.isDev || ['ADMIN_BULK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Bulk = 'เฉพาะแอดมิน Bulk / ผู้จัดการ';   // อัปโหลดแพลนได้ = DEV / ADMIN_BULK / MANAGER (ตรงกับ Edge bulk-plan)
+    // Packing = หน้าแจกงาน PK (pk-plan.html · 27 ต.ค.) · DEV / ADMIN_PK / MANAGER (ตรงกับ Edge pk-plan) · ฟอร์มขอรถ Packing เดิมเลิกใช้
+    if (!(gi && (gi.isDev || ['ADMIN_PK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Packing = 'เฉพาะแอดมิน Packing / ผู้จัดการ';
     const g = await ssbGroupGate(uid, { title: 'สร้าง/มอบหมายงาน', key: 'orderform', name: U.displayName || pf.n, picture: U.pictureUrl || pf.p,
-      desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Bulk: 'อัปโหลดแพลนส่งมอบ (SAP) · แจกงาน', Packing: 'ส่งคำขอรถ Packing' }, off });
+      desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Bulk: 'อัปโหลดแพลนส่งมอบ (SAP) · แจกงาน', Packing: 'อัปโหลดใบแจ้งงาน PK ประจำวัน · แจกงาน' }, off });
     if (g === 'Bulk') { location.href = '/SSB-SMART-SUPPLY-DASHBOARD/bulk.html?t=' + Date.now(); return; }   // ?t= กันเบราว์เซอร์ใช้หน้าเก่าที่จำไว้
+    if (g === 'Packing') { location.href = '/SSB-SMART-SUPPLY-DASHBOARD/pk-plan.html?t=' + Date.now(); return; }
     if (!g || window._ordLoadUid !== uid) return;
-    if (g === 'Packing') uRes = Object.assign({}, uRes, { role: 'ADMIN_PK' });
-    else if (g === 'ไร่' && uRes.role !== 'Admin') return;   // (กันไว้) แอดมิน Packing เลือกไร่ไม่ได้อยู่แล้ว
+    if (g === 'ไร่' && uRes.role !== 'Admin') return;   // (กันไว้) แอดมิน Packing เลือกไร่ไม่ได้อยู่แล้ว
   }
   if (uRes.status === 'ok') _setup(uRes, gRes, preAdmin);
   else { document.body.classList.remove('boot'); document.getElementById('uname').textContent = U.displayName || ''; }
