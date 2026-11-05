@@ -1095,7 +1095,8 @@ function _fillChildOptions(excludeChild, mother) {
   const headCls = (window._hitchHeads || {})[String(mother || '').replace(/\s+/g, '')] || '';
   (window._freeChildren || []).forEach(c => {
     if (c.child === excludeChild) return;
-    if (headCls && c.cls && c.cls !== headCls) return;
+    if (headCls === 'hook') { if (!c.box) return; }   // 🪝 2026-11-05 หัว 10 ล้อฮุกลิฟ = เฉพาะหางกระบะ
+    else if (headCls && c.cls && c.cls !== headCls) return;
     const o = document.createElement('option');
     o.value = c.child;
     o.textContent = `${c.child} (${c.ownerName || '—'})`;
