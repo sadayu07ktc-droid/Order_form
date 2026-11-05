@@ -148,7 +148,7 @@ body.boot .body>*:not(#ucard){display:none!important}
     <div><div class="uc-name" id="uname">กำลังโหลด...</div><div class="uc-sub" id="usub">—</div></div>
     <span class="uc-badge bg-g" id="ubadge">—</span>
   </div>
-  <div class="hint hw hide" id="h-ramp">🔒 ลานเท: กรอกได้เฉพาะ วันที่ · เวลา · กระบะ · หมายเหตุ</div>
+  <div class="hint hw hide" id="h-ramp">🔒 ลานเท: กรอกได้เฉพาะ วันที่ · เวลา · ปลายทาง · กระบะ · หมายเหตุ</div>
   <div class="hint hi hide" id="h-admin">⚙️ Admin: สร้างออเดอร์หรือมอบหมายคนขับให้ออเดอร์เดิม</div>
 
   <div class="card-admin hide" id="card-assign">
@@ -257,6 +257,17 @@ body.boot .body>*:not(#ucard){display:none!important}
             <span class="chip" onclick="pickSel(this,true,'inp-team')">มีทีมตัด</span>
           </div>
           <select class="inp hide" id="inp-team" style="margin-top:8px"><option value="">-- เลือกทีม --</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📍 ปลายทางจริง (5 พ.ย.): เฉพาะแอดมิน/ลานเท · ส่งบ่อไร่ = ค่าแรงคิดรูท โรงงาน→จุดรับ→บ่อไร่→โรงงาน -->
+    <div class="card hide" id="card-dest">
+      <div class="stitle">🏁 ปลายทางส่งปาล์ม</div>
+      <div class="fld" style="margin:0">
+        <div class="chips" id="dest-chips">
+          <span class="chip on" onclick="pick(this)">โรงงาน</span>
+          <span class="chip" onclick="pick(this)">สสบ.บ่อไร่</span>
         </div>
       </div>
     </div>
@@ -677,6 +688,7 @@ function _setup(u, g, preAdmin) {
     document.getElementById('uname').textContent = u.name;
     document.getElementById('usub').textContent  = u.phone;
     document.getElementById('h-ramp').classList.remove('hide');
+    document.getElementById('card-dest').classList.remove('hide');
     document.getElementById('btn-palm-daily').classList.remove('hide');
     document.getElementById('lk-bill').classList.remove('hide');
     document.getElementById('inner-bill').classList.add('locked');
@@ -694,6 +706,7 @@ function _setup(u, g, preAdmin) {
     document.getElementById('usub').textContent  = u.phone;
     document.getElementById('back-dash').classList.remove('hide');   // ← ปุ่มกลับ Dashboard (เฉพาะ Admin)
     document.getElementById('h-admin').classList.remove('hide');
+    document.getElementById('card-dest').classList.remove('hide');
     document.getElementById('card-assign').classList.remove('hide');
     _fillGardens(g.gardens || [], g.ramps || []);   // แอดมินเลือกลานเป็นจุดรับได้
     _initGardenSearch('🔍 พิมพ์ค้นหาสวน หรือ ลาน...');
@@ -902,9 +915,21 @@ function _applyPresetOrderId() {
   }
 }
 
+// 📍 ปลายทางที่เลือก · ว่าง = โรงงาน (ซ่อนช่อง = ไม่ส่ง)
+function _destVal() {
+  const c = document.getElementById('card-dest');
+  if (!c || c.classList.contains('hide')) return '';
+  const on = document.querySelector('#dest-chips .chip.on'), s = on ? on.textContent.trim() : '';
+  return s === 'โรงงาน' ? '' : s;
+}
 function onAssignOrderChange() {
   const sel = document.getElementById('inp-assign-order');
   const opt = sel.options[sel.selectedIndex];
+  // จ่ายงานใบเดิม = ปลายทางเดิมของใบนั้นคงไว้ · แก้ได้ที่ลิ้นชักหน้าค่าแรง
+  if (userRole === 'Admin') {
+    document.getElementById('card-dest').classList.toggle('hide', !!(opt && opt.value));
+    document.querySelectorAll('#dest-chips .chip').forEach((c, i) => c.classList.toggle('on', i === 0));
+  }
   if (!opt || !opt.value) {
     document.getElementById('prefill-badge').classList.add('hide');
     _unlockOrderForm();
@@ -1801,7 +1826,7 @@ async function submitForm() {
       date, time, billName: bill, pickupPoint: pickup, rspo,
       teamId: (!teamEl.classList.contains('hide')) ? teamEl.value : 'ไม่มี',
       binCount, note: document.getElementById('inp-note').value,
-      jobType: 'ปาล์ม'
+      jobType: 'ปาล์ม', destStation: _destVal()
     };
 
   } else {
@@ -1935,6 +1960,7 @@ function openOrderPreview(payload, isAdmin){
   add('จุดรับ', p.pickupPoint);
   if(p.jobType==='ปาล์ม'){
     add('จำนวนกระบะ', p.binCount?(p.binCount+' ใบ'):'');
+    add('🏁 ส่งที่', p.destStation);
     add('ชื่อในบิล', p.billName);
     if(p.teamId && p.teamId!=='ไม่มี') add('ทีมตัด', p.teamId);
     add('RSPO', p.rspo);
