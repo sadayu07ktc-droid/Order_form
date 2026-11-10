@@ -82,6 +82,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--text);
 #success p{font-size:14px;color:var(--text-m);line-height:1.8}
 .btn-close{margin-top:10px;padding:12px 32px;border-radius:999px;background:var(--green);color:#fff;font-size:15px;font-family:'Sarabun',sans-serif;border:none;cursor:pointer}
 .hide{display:none}
+.otbox{margin-top:9px;padding:10px;border:1px dashed var(--border);border-radius:12px;background:var(--cream)}
+.otbox .otl{font-size:12px;font-weight:700;color:var(--text-m);margin-bottom:7px}
+.otbox .chip{background:#fff}.otbox .chip.on{background:var(--green);color:#fff}
+.otbox .ots{font-size:11.5px;color:var(--text-m);margin-top:6px}
 /* ระหว่างรอรู้บทบาท (และรอแอดมินเลือกกลุ่ม) ซ่อนฟอร์มไว้ โชว์แค่การ์ดชื่อ — เดิมฟอร์มเจ้าของสวนโผล่ก่อนชิปเลือกกลุ่ม · 2026-10-15 */
 body.boot .body>*:not(#ucard){display:none!important}
 .driver-info{font-size:11px;color:var(--text-m);padding:6px 10px;background:rgba(79,70,229,.06);border-radius:8px;margin-top:6px;display:none}
@@ -137,7 +141,7 @@ body.boot .body>*:not(#ucard){display:none!important}
 
 <div class="hdr">
   <div class="hdr-logo">🌴</div>
-  <div><h1>แจ้งรับงานขนส่ง</h1><p>SSB Smart Supply</p></div>
+  <div><h1>แจ้งงานขนส่ง</h1><p>SSB Smart Supply</p></div>
   <button id="back-dash" class="btn-back hide" onclick="goBackToDashboard()">‹ SSB Dashboard</button>
   <button id="btn-palm-daily" class="btn-back hide" onclick="goToPalmDaily()" style="background:#c9a876;border-color:#b8946a;color:#3a2c1a;">🌴 บันทึกผลปาล์มรายวัน</button>
 </div>
@@ -1227,7 +1231,12 @@ function addGoodsRow() {
         <span class="chip" onclick="pickGoods(this,${id},'เสียม')">⛏️ เสียม</span>
         <span class="chip" onclick="pickGoods(this,${id},'อื่นๆ')">📦 อื่นๆ</span>
       </div>
-      <input class="inp hide" id="inp-goods-other-${id}" style="margin-top:8px" placeholder="ระบุรายการสินค้า...">
+      <div class="otbox hide" id="goods-ot-${id}">
+        <div class="otl">ชนิดงาน <span class="req">*</span></div>
+        <div class="chips">${OT_TYPES.map(t => `<span class="chip" data-ot="${t[0]}" onclick="pickOt(this,${id})">${t[2]} ${t[1]}</span>`).join('')}</div>
+        <div class="ots">เก็บชนิดงานไว้ในออเดอร์ · ค่าแรงงานกลุ่มนี้ยังไม่คิด (รอกำหนดอัตรา)</div>
+      </div>
+      <input class="inp hide" id="inp-goods-other-${id}" style="margin-top:8px" placeholder="รายละเอียด เช่น ส่งคนไปที่ไหน / ของอะไร...">
     </div>
     <div class="fld" style="margin:0">
       <label>จำนวน <span class="req">*</span></label>
@@ -1235,7 +1244,7 @@ function addGoodsRow() {
         <input class="inp" type="number" id="inp-qty-${id}" placeholder="0" min="1">
         <select class="inp" id="inp-unit-${id}" onchange="document.getElementById('inp-unit-other-${id}').classList.toggle('hide', this.value !== '__other__')">
           <option value="">-- หน่วย --</option>
-          <option>ตัน</option><option>กระสอบ</option><option>ชิ้น</option><option>อัน</option>
+          <option>ตัน</option><option>กระสอบ</option><option>ชิ้น</option><option>อัน</option><option>คน</option><option>เที่ยว</option>
           <option value="__other__">ระบุเอง</option>
         </select>
       </div>
@@ -1265,6 +1274,17 @@ function pickGoods(el, id, val) {
   document.querySelectorAll(`#goods-chips-${id} .chip`).forEach(c => c.classList.remove('on'));
   el.classList.add('on');
   document.getElementById(`inp-goods-other-${id}`).classList.toggle('hide', val !== 'อื่นๆ');
+  document.getElementById(`goods-ot-${id}`).classList.toggle('hide', val !== 'อื่นๆ');
+}
+// 📦 ชนิดงานอื่นๆ = ตาราง pk_other_job_types (รหัส · ชื่อ · ไอคอน) · ส่งรหัสไปเก็บที่ orders.other_job_code · 10 พ.ย.
+const OT_TYPES = [['OT01','ส่งคน','🧑‍🤝‍🧑'],['OT02','ขนส่งเหล็ก/วัสดุ','🏗️'],['OT03','ส่ง-รับของ/อะไหล่','🔩'],['OT04','งานกิจกรรม/พิธี','🎪'],
+  ['OT05','นำรถเข้าซ่อม/ศูนย์','🔧'],['OT06','ขนย้ายเครื่องจักร','⚙️'],['OT07','งานในโรงงาน','🏭'],['OT08','ติดรถ/เรียนงาน/ทดสอบรถ','🚚'],
+  ['OT09','ช่วยเหลือฉุกเฉิน','🚨'],['OT10','อื่นๆ (รอระบุ)','📝']];
+function pickOt(el, id) {
+  document.querySelectorAll(`#goods-ot-${id} .chip`).forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  const inp = document.getElementById(`inp-goods-other-${id}`);
+  inp.placeholder = el.dataset.ot === 'OT10' ? 'ระบุงาน (จำเป็น) เช่น ไปทำอะไร ที่ไหน...' : 'รายละเอียด (ถ้ามี) เช่น ไปที่ไหน / ของอะไร...';
 }
 
 // อ่านข้อมูลทุกรายการสินค้า → คืนค่า array [{goodsType, qty, unit}]
@@ -1274,11 +1294,18 @@ function getGoodsItems() {
     const id = row.id.replace('goods-row-', '');
     const chip = row.querySelector(`#goods-chips-${id} .chip.on`);
     let goodsType = chip?.textContent.replace(/[🌱🪚⛏️📦]/g,'').trim() || '';
-    if (goodsType === 'อื่นๆ') goodsType = document.getElementById(`inp-goods-other-${id}`).value.trim();
+    let otCode = '';
+    if (goodsType === 'อื่นๆ') {
+      const otEl = row.querySelector(`#goods-ot-${id} .chip.on`), det = document.getElementById(`inp-goods-other-${id}`).value.trim();
+      const ot = otEl ? OT_TYPES.find(t => t[0] === otEl.dataset.ot) : null;
+      otCode = ot ? ot[0] : '';
+      goodsType = !ot ? '' : ot[0] === 'OT10' ? (det ? 'อื่นๆ · ' + det : '') : ot[1] + (det ? ' · ' + det : '');
+      if (!ot) otCode = '__none__'; else if (ot[0] === 'OT10' && !det) otCode = '__nodet__';
+    }
     const qty = document.getElementById(`inp-qty-${id}`).value;
     const unitVal = document.getElementById(`inp-unit-${id}`).value;
     const unit = unitVal === '__other__' ? document.getElementById(`inp-unit-other-${id}`).value.trim() : unitVal;
-    items.push({ goodsType, qty, unit });
+    items.push(otCode ? { goodsType, qty, unit, otCode } : { goodsType, qty, unit });
   });
   return items;
 }
@@ -1842,6 +1869,8 @@ async function submitForm() {
     if (!time)       { ssbAlert('กรุณาเลือกเวลาครับ'); return; }
     if (items.length === 0) { ssbAlert('กรุณาเพิ่มรายการสินค้าครับ'); return; }
     for (const it of items) {
+      if (it.otCode === '__none__') { ssbAlert('กรุณาเลือกชนิดงาน (ส่งคน / ขนส่งเหล็ก …) ให้ครบทุกรายการครับ'); return; }
+      if (it.otCode === '__nodet__') { ssbAlert('ชนิดงาน "อื่นๆ (รอระบุ)" กรุณาพิมพ์รายละเอียดงานด้วยครับ'); return; }
       if (!it.goodsType) { ssbAlert('กรุณาเลือกรายการสินค้าให้ครบทุกรายการครับ'); return; }
       if (!it.qty || parseFloat(it.qty) <= 0) { ssbAlert('กรุณาระบุจำนวนให้ครบทุกรายการครับ'); return; }
       if (!it.unit) { ssbAlert('กรุณาระบุหน่วยให้ครบทุกรายการครับ'); return; }
@@ -1860,7 +1889,8 @@ async function submitForm() {
       gardenId: destData.id, gardenName: destData.name,
       date, time, billName: destData.name, pickupPoint: pickup,
       rspo: 'ไม่มี', teamId: 'ไม่มี', binCount: 1,
-      note, jobType: 'อื่นๆ', items
+      note, jobType: 'อื่นๆ', items: items.map(({ otCode, ...it }) => it),
+      otherJobCode: [...new Set(items.map(it => it.otCode).filter(Boolean))].join(',')
     };
   }
 
