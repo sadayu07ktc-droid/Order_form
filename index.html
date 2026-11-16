@@ -320,6 +320,13 @@ body.boot .body>*:not(#ucard){display:none!important}
         <select class="inp" id="inp-dest" onchange="onDestChange()">
           <option value="">-- เลือกสถานที่ส่ง --</option>
         </select>
+        <!-- 📍 16 พ.ย. หาไม่เจอในรายการ → ค้นค่ากลางทุกกลุ่ม (รวม Packing) + หมุด DTC · เลือก = เก็บพิกัด · พิมพ์เอง = ยังไม่มีหมุด -->
+        <div style="margin-top:6px;font-size:12px"><a href="#" onclick="event.preventDefault();otPlaceToggle()" style="color:#1B4332;font-weight:600">📍 หาไม่เจอ? ค้นจากค่ากลางทุกกลุ่ม + หมุด DTC</a></div>
+        <div id="ot-place-box" class="hide" style="margin-top:6px">
+          <input class="inp" id="ot-place-q" maxlength="120" autocomplete="off" oninput="otPlaceInput(this.value)" placeholder="พิมพ์ชื่อ เช่น พาเลท LOSCAM · อมรชัย · ปูนขาว">
+          <div id="ot-sugg" style="margin-top:4px;max-height:240px;overflow-y:auto;border-radius:12px"></div>
+        </div>
+        <div id="ot-place-tag" style="margin-top:6px;font-size:12px"></div>
       </div>
       <div class="fld" style="margin:0"><label>จุดรับ <span class="req">*</span></label>
         <select class="inp" id="inp-pickup-o">
@@ -818,7 +825,75 @@ function _fillDestinations(g, stations) {
   }
 }
 
+// 📍 16 พ.ย. ค้นสถานที่งานอื่นๆ (เหมือนปุ่ม ➕ เพิ่มรูท หน้า Order_Status) · Edge ssb-misc searchPlaces (แอดมิน · ≥2 ตัว)
+//   เลือก → เพิ่มเป็นตัวเลือกใน "สถานที่ส่ง" (กลุ่ม 🔎 จากการค้นหา) แล้วเลือกให้ · value มี latlng → ส่ง placeLatLng
+//   พิมพ์เองไม่เจอ → ปุ่ม "ใช้ชื่อนี้" (id PL-FREE · ยังไม่มีหมุด) · เลือกสถานีจากรายการเดิม = order-submit หาหมุด DTC ชื่อตรงให้เอง
+const PLACE_EDGE = 'https://abihhdjcrbvwlkzwvjio.supabase.co/functions/v1/ssb-misc';
+const _escO = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let _otSugg = [], _otSeq = 0, _otTimer = 0; const _otCache = {};
+function otPlaceToggle(){
+  const b = document.getElementById('ot-place-box'); b.classList.toggle('hide');
+  if (!b.classList.contains('hide')) document.getElementById('ot-place-q').focus();
+}
+function otPlaceInput(v){
+  clearTimeout(_otTimer); const q = String(v||'').trim();
+  if (q.length < 2) { _otSugg = []; document.getElementById('ot-sugg').innerHTML = ''; return; }
+  _otTimer = setTimeout(() => otPlaceSearch(q), 350);
+}
+async function otPlaceSearch(q){
+  const seq = ++_otSeq, box = document.getElementById('ot-sugg');
+  let r = _otCache[q];
+  if (!r) {
+    box.innerHTML = '<div style="padding:8px 10px;color:#2D6A4F">กำลังค้น...</div>';
+    try {
+      const d = await fetch(`${PLACE_EDGE}?action=searchPlaces&userId=${encodeURIComponent((typeof U !== 'undefined' && U && U.userId) || '')}&q=${encodeURIComponent(q)}`).then(x => x.json());
+      if (!d || !d.ok) throw new Error((d && (d.denied ? 'ไม่มีสิทธิ์' : d.error)) || 'ค้นไม่สำเร็จ');
+      r = _otCache[q] = d.places || [];
+    } catch (e) { if (seq === _otSeq) { _otSugg = []; box.innerHTML = `<div style="padding:8px 10px;color:#b91c1c">ค้นไม่สำเร็จ (${_escO(e.message)})</div>` + _otFreeBtn(q); } return; }
+  }
+  if (seq !== _otSeq) return;   // พิมพ์ต่อระหว่างรอ → ทิ้งผลเก่า
+  _otSugg = r;
+  box.innerHTML = r.map((p, i) => `<div onclick="otPickPlace(${i})" style="cursor:pointer;padding:7px 10px;border:1px solid #E9DFC4;border-radius:10px;margin-bottom:4px;background:#fff">
+      <div style="font-weight:600;color:#1B4332">${p.latlng ? '📍' : '▫️'} ${_escO(p.name)}</div>
+      <div style="font-size:11px;color:#52796F">${p.km ? 'ค่ากลาง ' + _escO(p.km) + ' กม.' : 'ยังไม่มีค่ากลาง'} · ${p.latlng ? 'มีหมุด DTC' : 'ยังไม่มีหมุด'}</div></div>`).join('')
+    + (r.length ? '' : `<div style="padding:6px 10px;color:#92400e">ไม่พบ "${_escO(q)}" ในค่ากลาง/หมุด DTC</div>`) + _otFreeBtn(q);
+}
+function _otFreeBtn(q){
+  return `<div onclick="otUseTyped()" style="cursor:pointer;padding:7px 10px;border:1px dashed #d97706;border-radius:10px;background:#fffbeb;color:#92400e;font-weight:600">✏️ ใช้ชื่อที่พิมพ์ "${_escO(q)}" (ยังไม่มีหมุด)</div>`;
+}
+function otPickPlace(i){ const p = _otSugg[i]; if (p) _otSetDest({ id: p.id || 'PL-FREE', name: p.name, latlng: p.latlng || '', km: p.km || '' }); }
+function otUseTyped(){
+  const q = (document.getElementById('ot-place-q').value || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  if (q.length < 2) { ssbAlert('พิมพ์ชื่อสถานที่อย่างน้อย 2 ตัวอักษรครับ'); return; }
+  _otSetDest({ id: 'PL-FREE', name: q, latlng: '', km: '' });
+}
+function _otSetDest(p){
+  const sel = document.getElementById('inp-dest');
+  let grp = document.getElementById('ot-found-grp');
+  if (!grp) { grp = document.createElement('optgroup'); grp.id = 'ot-found-grp'; grp.label = '🔎 จากการค้นหา'; }
+  const val = JSON.stringify({ id: p.id, name: p.name, type: 'station', pickup: p.name, latlng: p.latlng, km: p.km, searched: 1 });
+  // Tom Select sync แล้วย้ายตัวเลือกออกจากกลุ่ม → หาซ้ำจากทั้ง select กันเพิ่มชื่อเดิมซ้ำ
+  if (![...sel.options].some(x => x.value === val)) {
+    const o = document.createElement('option'); o.value = val; o.textContent = (p.latlng ? '📍 ' : '✏️ ') + p.name; grp.appendChild(o);
+    if (grp.parentNode) grp.remove();
+    sel.appendChild(grp);   // ใส่กลุ่ม = childList เปลี่ยน → Tom Select sync รายการให้เอง
+  }
+  sel.value = val;
+  onDestChange();
+  document.getElementById('ot-place-box').classList.add('hide');
+  document.getElementById('ot-sugg').innerHTML = ''; document.getElementById('ot-place-q').value = '';
+}
+function _otTagFromDest(){
+  const t = document.getElementById('ot-place-tag'); if (!t) return;
+  const opt = document.getElementById('inp-dest').selectedOptions[0];
+  let d = null; try { d = opt && opt.value ? JSON.parse(opt.value) : null; } catch (_) {}
+  if (!d || !d.searched) { t.innerHTML = ''; return; }
+  t.innerHTML = d.latlng
+    ? `<span style="display:inline-block;padding:2px 8px;border-radius:8px;background:#f0f9ff;border:1px solid #7dd3fc;color:#075985">📍 มีหมุด DTC${d.km ? ' · ค่ากลาง ' + _escO(d.km) + ' กม.' : ' · ยังไม่มีค่ากลาง'}</span>`
+    : `<span style="display:inline-block;padding:2px 8px;border-radius:8px;background:#fffbeb;border:1px solid #fcd34d;color:#92400e">⚠️ ยังไม่มีหมุด${d.km ? ' · ค่ากลาง ' + _escO(d.km) + ' กม.' : ''} (DEV ผูกหมุด/ค่ากลางทีหลังได้)</span>`;
+}
 function onDestChange() {
+  _otTagFromDest();
   const sel = document.getElementById('inp-dest');
   const opt = sel.options[sel.selectedIndex];
   if (!opt || !opt.value) return;
@@ -1890,7 +1965,8 @@ async function submitForm() {
       date, time, billName: destData.name, pickupPoint: pickup,
       rspo: 'ไม่มี', teamId: 'ไม่มี', binCount: 1,
       note, jobType: 'อื่นๆ', items: items.map(({ otCode, ...it }) => it),
-      otherJobCode: [...new Set(items.map(it => it.otCode).filter(Boolean))].join(',')
+      otherJobCode: [...new Set(items.map(it => it.otCode).filter(Boolean))].join(','),
+      placeLatLng: destData.latlng || ''   // 📍 16 พ.ย. เลือกจากค้นหา · ว่าง = order-submit หาหมุด DTC ชื่อตรงให้เอง
     };
   }
 
