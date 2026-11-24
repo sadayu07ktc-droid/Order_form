@@ -105,7 +105,7 @@ body.boot .body>*:not(#ucard){display:none!important}
 </style>
   <script src="/SSB-SMART-SUPPLY-DASHBOARD/ssb-ui.js?v=20261008i"></script>
   <script src="/SSB-SMART-SUPPLY-DASHBOARD/ssb-pin-gate.js?v=20261014b"></script>
-  <script src="/SSB-SMART-SUPPLY-DASHBOARD/ssb-group-gate.js?v=20261014a"></script>
+  <script src="/SSB-SMART-SUPPLY-DASHBOARD/ssb-group-gate.js?v=20261124a"></script>
 </head>
 <body class="boot">
 <div id="overlay"><div class="spinner"></div><p>กำลังส่งข้อมูล...</p></div>
@@ -596,6 +596,10 @@ async function _edgeFirst(action, uid) {
 async function loadOrderForm(uid) {
   U.userId = uid;
   window._ordLoadUid = uid;   // โหลดล่วงหน้าด้วย uid ที่จำไว้ แต่ LINE เป็นอีกบัญชี → ผลของบัญชีเก่าห้ามทับหน้า (2026-10-09)
+  // 🧭 24 พ.ย. คุณน้อง: กด "สร้าง/มอบหมายงาน" → ขึ้นหน้าเลือกกลุ่มทันที (เดิมโชว์ฟอร์มไร่ "กำลังโหลด…" ก่อน เพราะรอ bundle)
+  //    เปิดล่วงหน้าเมื่อมาจากเมนูแดชบอร์ด (?gate=1) หรือเคยเลือกกลุ่มในหน้านี้แล้ว (ssb_grp_orderform) · quiet = ไม่ใช่แอดมินปิดเงียบ
+  const earlyGate = (typeof ssbGroupGate === 'function' && (/[?&]gate=1\b/.test(location.search) || _lsGet('ssb_grp_orderform')))
+    ? _ordGate(uid, true).catch(() => null) : null;
 
   // ⚡ โชว์จากแคชทันที (เฉพาะ non-admin: เจ้าของ/ทีม/ลาน — ข้อมูลนิ่ง)
   //    admin ไม่แคช (งานค้าง/คนขับเปลี่ยนบ่อย) → รอ bundle ตามปกติ
@@ -627,7 +631,7 @@ async function loadOrderForm(uid) {
     ]);
   }
   if (window._ordLoadUid !== uid) return;   // มีการโหลดบัญชีอื่นทีหลังแล้ว → ทิ้งผลนี้
-  if (m && m.closed) { showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ (override แคช)
+  if (m && m.closed) { const gw = document.getElementById('gg-wrap'); if (gw) gw.hidden = true; showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ (override แคช · ปิดหน้าเลือกกลุ่มที่เปิดล่วงหน้า)
 
   // เซฟแคชรอบหน้า (เฉพาะ user+garden ของ non-admin — ไม่เก็บ maintenance/admin)
   if (uRes.status === 'ok' && ORD_CACHE_ROLES[uRes.role]) _setOrdCache(uid, { user: uRes, garden: gRes });
@@ -644,25 +648,38 @@ async function loadOrderForm(uid) {
   // 🧭 แอดมิน: เลือกกลุ่ม (ไร่/Bulk/Packing) + PIN ส่วนตัวก่อนสร้าง/มอบหมายงาน · ssb-group-gate.js (2026-10-14)
   //    ไร่ = ฟอร์มแอดมินเดิม · Packing = ฟอร์มขอรถ Packing (เหมือนแอดมิน Packing) · Bulk = ยังไม่มีฟอร์ม
   if (uRes.status === 'ok' && (uRes.role === 'Admin' || uRes.role === 'ADMIN_PK') && typeof ssbGroupGate === 'function') {
-    let pf = {}; try { pf = JSON.parse(_lsGet('ssb_ord_prof') || '{}') || {}; } catch (e) {}   // โหลดล่วงหน้าก่อน LINE ตอบ → ใช้ชื่อ/รูปที่จำไว้
-    // Bulk = หน้าแพลนส่งมอบ (bulk.html) · ระหว่างทำแจ้งเตือน LINE เปิดให้ DEV ทดสอบก่อน · Packing ปิดไว้ก่อน (คุณน้อง 14 ต.ค.)
-    let gi = null; try { gi = await ssbGroupInfo(uid); } catch (e) {}
-    const off = {}; if (!(gi && (gi.isDev || ['ADMIN_BULK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Bulk = 'เฉพาะแอดมิน Bulk / ผู้จัดการ';   // อัปโหลดแพลนได้ = DEV / ADMIN_BULK / MANAGER (ตรงกับ Edge bulk-plan)
-    // Packing = หน้าแจกงาน PK (pk-plan.html · 27 ต.ค.) · DEV / ADMIN_PK / MANAGER (ตรงกับ Edge pk-plan) · ฟอร์มขอรถ Packing เดิมเลิกใช้
-    if (!(gi && (gi.isDev || ['ADMIN_PK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Packing = 'เฉพาะแอดมิน Packing / ผู้จัดการ';
-    const g = await ssbGroupGate(uid, { title: 'สร้าง/มอบหมายงาน', key: 'orderform', name: U.displayName || pf.n, picture: U.pictureUrl || pf.p,
-      desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Bulk: 'อัปโหลดแพลนส่งมอบ (SAP) · แจกงาน', Packing: 'อัปโหลดใบแจ้งงาน PK ประจำวัน · แจกงาน' }, off });
-    if (g === 'Bulk') { location.href = '/SSB-SMART-SUPPLY-DASHBOARD/bulk.html?t=' + Date.now(); return; }   // ?t= กันเบราว์เซอร์ใช้หน้าเก่าที่จำไว้
-    if (g === 'Packing') { location.href = '/SSB-SMART-SUPPLY-DASHBOARD/pk-plan.html?t=' + Date.now(); return; }
+    let g = earlyGate ? await earlyGate : null;   // เปิดหน้าเลือกกลุ่มไปแล้วตั้งแต่ต้น → ใช้ผลนั้น (เลือกก่อน bundle เสร็จก็ได้)
+    if (!g && window._ordLoadUid === uid) g = await _ordGate(uid, false);   // ไม่ได้เปิดล่วงหน้า / ตรวจสิทธิ์ล่วงหน้าไม่ผ่าน → แบบเดิม
+    if (g === 'go') return;   // Bulk / Packing เด้งไปหน้าของกลุ่มแล้ว
     if (!g || window._ordLoadUid !== uid) return;
     if (g === 'ไร่' && uRes.role !== 'Admin') return;   // (กันไว้) แอดมิน Packing เลือกไร่ไม่ได้อยู่แล้ว
+  } else if (earlyGate) {   // เปิดล่วงหน้าไว้ แต่บทบาทไม่ใช่ Admin/ADMIN_PK → แอดมินจริง (admin-perms) ยังเลือกได้ · ไม่ใช่แอดมินปิดเองแล้ว
+    if ((await earlyGate) === 'go' || window._ordLoadUid !== uid) return;
   }
   if (uRes.status === 'ok') _setup(uRes, gRes, preAdmin);
   else { document.body.classList.remove('boot'); document.getElementById('uname').textContent = U.displayName || ''; }
 }
 
+// 🧭 หน้าเลือกกลุ่ม (ไร่/Bulk/Packing) + PIN ส่วนตัว · คืน 'ไร่' | 'go' (เด้งไป Bulk/Packing แล้ว) | null
+//    Bulk = หน้าแพลนส่งมอบ (bulk.html) · DEV / ADMIN_BULK / MANAGER (ตรงกับ Edge bulk-plan)
+//    Packing = หน้าแจกงาน PK (pk-plan.html · 27 ต.ค.) · DEV / ADMIN_PK / MANAGER (ตรงกับ Edge pk-plan) · ฟอร์มขอรถ Packing เดิมเลิกใช้
+async function _ordGate(uid, quiet) {
+  let pf = {}; try { pf = JSON.parse(_lsGet('ssb_ord_prof') || '{}') || {}; } catch (e) {}   // โหลดล่วงหน้าก่อน LINE ตอบ → ใช้ชื่อ/รูปที่จำไว้
+  const offOf = gi => {
+    const off = {};
+    if (!(gi && (gi.isDev || ['ADMIN_BULK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Bulk = 'เฉพาะแอดมิน Bulk / ผู้จัดการ';
+    if (!(gi && (gi.isDev || ['ADMIN_PK', 'MANAGER'].indexOf(gi.adminType) >= 0))) off.Packing = 'เฉพาะแอดมิน Packing / ผู้จัดการ';
+    return off;
+  };
+  const g = await ssbGroupGate(uid, { title: 'สร้าง/มอบหมายงาน', key: 'orderform', name: U.displayName || pf.n, picture: U.pictureUrl || pf.p, quiet,
+    desc: { 'ไร่': 'สร้างงานรับปาล์ม · มอบหมายคนขับ', Bulk: 'อัปโหลดแพลนส่งมอบ (SAP) · แจกงาน', Packing: 'อัปโหลดใบแจ้งงาน PK ประจำวัน · แจกงาน' }, off: offOf });
+  if (g === 'Bulk') { location.href = '/SSB-SMART-SUPPLY-DASHBOARD/bulk.html?t=' + Date.now(); return 'go'; }   // ?t= กันเบราว์เซอร์ใช้หน้าเก่าที่จำไว้
+  if (g === 'Packing') { location.href = '/SSB-SMART-SUPPLY-DASHBOARD/pk-plan.html?t=' + Date.now(); return 'go'; }
+  return g;
+}
+
 // ── Setup UI ──────────────────────────────────────────────
-const roleLabel   = { Owner:'เจ้าของสวน', Team:'ทีมตัด', Ramp:'ลานเท', Driver:'คนขับ', Admin:'Admin', ADMIN_PK:'Packing' };
+const roleLabel  = { Owner:'เจ้าของสวน', Team:'ทีมตัด', Ramp:'ลานเท', Driver:'คนขับ', Admin:'Admin', ADMIN_PK:'Packing' };
 const roleIcon    = { Owner:'🌳', Team:'🌿', Ramp:'🏭', Admin:'⚙️', ADMIN_PK:'📦' };
 const roleCardCls = { Owner:'uc-g', Team:'uc-g', Ramp:'uc-b', Admin:'uc-i', ADMIN_PK:'uc-i' };
 const roleAvCls   = { Owner:'av-g', Team:'av-g', Ramp:'av-b', Admin:'av-i', ADMIN_PK:'av-i' };
