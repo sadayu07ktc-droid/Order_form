@@ -458,6 +458,22 @@ body.boot .body>*:not(#ucard){display:none!important}
 </div>
 
 <script>
+// 👁️ 24 พ.ย. โหมด DEV ดูแทนคนสวน/ทีมตัด (เมนู Developer · dev-drivers.html) — ?asUser=<uid>
+//    ดูอย่างเดียว: บล็อกทุกคำขอที่ไม่ใช่ GET (ส่งงาน/แก้/ยกเลิก) · ไม่ใช้ LIFF · ไม่เขียนแคชเครื่อง · ต้องเป็น DEV (บัตร ssb_session_v1 + Edge dev-drivers ?action=me)
+//    ผู้ใช้ปกติ (ไม่มี ?asUser) ไม่โดนอะไรเลย · แบบเดียวกับ Driver_form ?asDriver=
+const DEVV = (function(){ try{ const u = new URLSearchParams(location.search).get('asUser');
+  return (u && /^U[0-9a-f]{32}$/.test(u)) ? { uid: u } : null; }catch(e){ return null; } })();
+if (DEVV) {
+  const _f = window.fetch.bind(window);
+  window.fetch = function(url, opt){
+    const m = String((opt && opt.method) || (url && url.method) || 'GET').toUpperCase();
+    if (m !== 'GET' && m !== 'HEAD') {
+      console.warn('[DEV view] บล็อกการบันทึก', String((url && url.url) || url).slice(0, 120));
+      return Promise.resolve(new Response(JSON.stringify({ success:false, ok:false, status:'err', error:'👁️ โหมด DEV ดูอย่างเดียว — ไม่บันทึก', message:'👁️ โหมด DEV ดูอย่างเดียว — ไม่บันทึก' }), { status:200, headers:{ 'Content-Type':'application/json' } }));
+    }
+    return _f(url, opt);
+  };
+}
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2DXaTVoX5cgUZjQrGlpx7tQ1-gwcYYB85eY8MElo2oaqBIxCsjVfL7yMiM8uuUw9YxA/exec';
 const LIFF_ID = '2010274217-BF41B8c2';
 // 🔧 ปิด-เปิดปรับปรุง ย้ายไปคุมที่ Script Property MAINT_ORDER (on/off) + MAINT_ALLOW_ROLES/UIDS
@@ -538,6 +554,7 @@ async function init() {
   });
   filterTime('inp-date', 'inp-time');
   filterTime('inp-date-o', 'inp-time-o');
+  if (DEVV) { await _devViewInit(); return; }   // 👁️ โหมด DEV — ไม่แตะ LIFF / uid ที่จำไว้ของเครื่องนี้
 
   // ⚡ จำ uid เดิม → ยิง maintenance+user+garden ทันที (ขนานกับ LIFF init) ไม่รอ LINE เสร็จก่อน
   const cachedUid = _lsGet('ssb_ord_uid');
@@ -557,6 +574,25 @@ async function init() {
     el.style.cursor = 'pointer';
     el.onclick = () => location.reload();
   }
+}
+
+// 👁️ โหมด DEV — เช็คสิทธิ์ DEV จากบัตรล็อกอินแดชบอร์ด แล้วโหลดฟอร์มในฐานะ uid นั้น (ไม่ผ่าน LIFF)
+async function _devViewInit() {
+  document.body.classList.add('devv');
+  const bar = document.createElement('div'); bar.id = 'devv-bar';
+  bar.style.cssText = 'position:sticky;top:0;z-index:99999;background:#7C2D12;color:#fff;text-align:center;padding:7px 10px;font-size:12.5px;font-weight:700';
+  bar.textContent = '👁️ โหมด DEV ดูแทนผู้ใช้ · ดูอย่างเดียว กดส่งไม่ได้';
+  document.body.insertBefore(bar, document.body.firstChild);
+  const stop = msg => { document.body.classList.remove('boot'); const el = document.getElementById('uname'); if (el) el.textContent = msg; bar.textContent = msg; };
+  let me = '';
+  try { const s = JSON.parse(_lsGet('ssb_session_v1') || 'null'); if (s && s.uid && (!s.t || Date.now() - s.t < 7 * 864e5)) me = s.uid; } catch (e) {}
+  if (!me) { stop('⛔ เปิดจากเมนู Developer ในแดชบอร์ดเท่านั้น'); return; }
+  try {
+    const r = await fetch('https://abihhdjcrbvwlkzwvjio.supabase.co/functions/v1/dev-drivers?action=me&userId=' + encodeURIComponent(me)).then(x => x.json());
+    if (!r || !r.dev) { stop('⛔ หน้านี้สำหรับ DEV เท่านั้น'); return; }
+  } catch (e) { stop('⚠️ ตรวจสิทธิ์ไม่สำเร็จ'); return; }
+  U.displayName = ''; U.pictureUrl = '';
+  await loadOrderForm(DEVV.uid);
 }
 
 // GAS /exec เด้ง error/HTML ชั่วคราวเป็นบางครั้ง (โดยเฉพาะหลัง redeploy) → retry กัน r.json() พังแล้วค้าง
@@ -598,12 +634,12 @@ async function loadOrderForm(uid) {
   window._ordLoadUid = uid;   // โหลดล่วงหน้าด้วย uid ที่จำไว้ แต่ LINE เป็นอีกบัญชี → ผลของบัญชีเก่าห้ามทับหน้า (2026-10-09)
   // 🧭 24 พ.ย. คุณน้อง: กด "สร้าง/มอบหมายงาน" → ขึ้นหน้าเลือกกลุ่มทันที (เดิมโชว์ฟอร์มไร่ "กำลังโหลด…" ก่อน เพราะรอ bundle)
   //    เปิดล่วงหน้าเมื่อมาจากเมนูแดชบอร์ด (?gate=1) หรือเคยเลือกกลุ่มในหน้านี้แล้ว (ssb_grp_orderform) · quiet = ไม่ใช่แอดมินปิดเงียบ
-  const earlyGate = (typeof ssbGroupGate === 'function' && (/[?&]gate=1\b/.test(location.search) || _lsGet('ssb_grp_orderform')))
+  const earlyGate = (!DEVV && typeof ssbGroupGate === 'function' && (/[?&]gate=1\b/.test(location.search) || _lsGet('ssb_grp_orderform')))
     ? _ordGate(uid, true).catch(() => null) : null;
 
   // ⚡ โชว์จากแคชทันที (เฉพาะ non-admin: เจ้าของ/ทีม/ลาน — ข้อมูลนิ่ง)
   //    admin ไม่แคช (งานค้าง/คนขับเปลี่ยนบ่อย) → รอ bundle ตามปกติ
-  const cached = _getOrdCache(uid);
+  const cached = DEVV ? null : _getOrdCache(uid);   // 👁️ โหมด DEV ไม่ใช้/ไม่เขียนแคชเครื่องนี้
   let shownFromCache = false;
   if (cached && cached.user && cached.user.status === 'ok' && ORD_CACHE_ROLES[cached.user.role]) {
     try {
@@ -634,7 +670,8 @@ async function loadOrderForm(uid) {
   if (m && m.closed) { const gw = document.getElementById('gg-wrap'); if (gw) gw.hidden = true; showMaintenance(); return; }   // ปิดปรับปรุง → หน้าปิดระบบ (override แคช · ปิดหน้าเลือกกลุ่มที่เปิดล่วงหน้า)
 
   // เซฟแคชรอบหน้า (เฉพาะ user+garden ของ non-admin — ไม่เก็บ maintenance/admin)
-  if (uRes.status === 'ok' && ORD_CACHE_ROLES[uRes.role]) _setOrdCache(uid, { user: uRes, garden: gRes });
+  if (DEVV) {}
+  else if (uRes.status === 'ok' && ORD_CACHE_ROLES[uRes.role]) _setOrdCache(uid, { user: uRes, garden: gRes });
   else if (uRes.status === 'ok') { try { localStorage.removeItem('ssb_ord_bundle_' + uid); } catch (e) {} }   // บทบาทนี้ไม่แคช → ล้างของเก่าทิ้ง
 
   // โชว์จากแคชไปแล้ว แต่บทบาทเปลี่ยน (เช่น เจ้าของสวน → ทีมตัด) → หน้าเดิมวาดค้างไว้ปนกัน โหลดหน้าใหม่ให้สะอาด (แคชถูกล้าง/อัปเดตแล้ว ไม่วนซ้ำ)
@@ -647,7 +684,7 @@ async function loadOrderForm(uid) {
   _fillTeams(gRes.teams || []);
   // 🧭 แอดมิน: เลือกกลุ่ม (ไร่/Bulk/Packing) + PIN ส่วนตัวก่อนสร้าง/มอบหมายงาน · ssb-group-gate.js (2026-10-14)
   //    ไร่ = ฟอร์มแอดมินเดิม · Packing = ฟอร์มขอรถ Packing (เหมือนแอดมิน Packing) · Bulk = ยังไม่มีฟอร์ม
-  if (uRes.status === 'ok' && (uRes.role === 'Admin' || uRes.role === 'ADMIN_PK') && typeof ssbGroupGate === 'function') {
+  if (!DEVV && uRes.status === 'ok' && (uRes.role === 'Admin' || uRes.role === 'ADMIN_PK') && typeof ssbGroupGate === 'function') {
     let g = earlyGate ? await earlyGate : null;   // เปิดหน้าเลือกกลุ่มไปแล้วตั้งแต่ต้น → ใช้ผลนั้น (เลือกก่อน bundle เสร็จก็ได้)
     if (!g && window._ordLoadUid === uid) g = await _ordGate(uid, false);   // ไม่ได้เปิดล่วงหน้า / ตรวจสิทธิ์ล่วงหน้าไม่ผ่าน → แบบเดิม
     if (g === 'go') return;   // Bulk / Packing เด้งไปหน้าของกลุ่มแล้ว
