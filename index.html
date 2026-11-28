@@ -2059,6 +2059,9 @@ async function doSubmit(payload, isAdmin) {
   let r = null, lastErr = null;
   // ⚡ ส่งผ่าน Edge "order-submit" (~1-2 วิ) เมื่อสวิตช์เปิด · เน็ตหลุด/ไม่ตอบ → ถอยไป GAS (clientKey เดิม = ไม่สร้างซ้ำ) · 2026-10-09
   let viaEdge = (window._submitVia === 'edge');
+  // 🧪 เฟส 3ก: งานทดสอบ (ผู้ใช้ทดสอบ / DEV เล่นโรล / สวนทดสอบ) → Edge เท่านั้น · GAS ไม่รู้จัก is_test จะส่ง LINE ถึงคนจริง
+  const testSub = !!(U && (U.isTest || U.devPlaying)) || ((gData && gData.gardens) || []).some(g => g.isTest && g.id === payload.gardenId);
+  if (testSub) viaEdge = true;
   for (let i = 0; i < 3; i++) {
     try {
       const res = viaEdge ? await _postWithTimeout(EDGE_SUBMIT_URL, JSON.stringify(payload), 20000)
@@ -2067,7 +2070,7 @@ async function doSubmit(payload, isAdmin) {
       break;
     } catch (e) {
       lastErr = e;
-      if (viaEdge) { console.warn('order-submit Edge → GAS', e); viaEdge = false; }   // Edge ใช้ไม่ได้ → รอบถัดไปไป GAS
+      if (viaEdge && !testSub) { console.warn('order-submit Edge → GAS', e); viaEdge = false; }   // Edge ใช้ไม่ได้ → รอบถัดไปไป GAS (งานทดสอบ 🧪 = ลอง Edge ซ้ำ ไม่ถอย)
       if (i < 2) await new Promise(res => setTimeout(res, 500 * (i + 1)));
     }
   }
